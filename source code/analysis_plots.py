@@ -8,7 +8,7 @@ from inputs import *
 #==============================================================================
 
 #-----------------------------Meridional view=---------------------------------
-def plots(xsl, rsl, x_nd,r_nd, Vm, Vt, W, Wt, alpha, beta, span, nstns):
+def plots(xsl, rsl, Vm, Vt, W, Wt, alpha, beta, span, nstns, bsf):
     print()
     print()
     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -21,10 +21,10 @@ def plots(xsl, rsl, x_nd,r_nd, Vm, Vt, W, Wt, alpha, beta, span, nstns):
     py.figure(fignum, figsize=(16,9))
     py.plot(xsl[0],rsl[0],color='g',marker='.',lw=1)
     py.plot(xsl[-1],rsl[-1],color='g',marker='.',lw=1)
-    for i in range(0,len(r_nd)):
-        lines=py.plot(x_nd[i],r_nd[i])
+    for i in range(0,nstations):
+        lines=py.plot(x_s[i,:]/bsf,r_s[i,:]/bsf)
         py.setp(lines,color = 'k',lw=0.75)
-    for i in range(1,len(r_nd)-1):
+    for i in range(1,nstations-1):
         lines=py.plot(xsl[i],rsl[i])
         py.setp(lines,color = 'blue',linestyle='--',lw=0.75)
     py.xlabel('x-coordinate')
@@ -87,8 +87,8 @@ def plots(xsl, rsl, x_nd,r_nd, Vm, Vt, W, Wt, alpha, beta, span, nstns):
     fignum+=1
 
     py.figure(fignum, figsize=(16,9))
-    py.plot(alpha[:,1],span,'k',marker='.',label=r'$\alpha_{in}$')
-    py.plot(alpha[:,2],span,'r',marker='.',label=r'$\alpha_{out}$')
+    py.plot(alpha[:,2],span,'k',marker='.',label=r'$\alpha_{in}$')
+    py.plot(alpha[:,3],span,'r',marker='.',label=r'$\alpha_{out}$')
     py.ylabel('span',size='24')
     py.xlabel(r'$\alpha_z$',size='24')
     py.legend()
@@ -100,8 +100,8 @@ def plots(xsl, rsl, x_nd,r_nd, Vm, Vt, W, Wt, alpha, beta, span, nstns):
 
     fignum+=1
     py.figure(fignum, figsize=(16,9))
-    py.plot(beta[:,2],span,'k',marker='.',label=r'$\beta_{in}$')
-    py.plot(beta[:,3],span,'r',marker='.',label=r'$\beta_{out}$')
+    py.plot(beta[:,4],span,'k',marker='.',label=r'$\beta_{in}$')
+    py.plot(beta[:,5],span,'r',marker='.',label=r'$\beta_{out}$')
     py.ylabel('span',size='24')
     py.xlabel(r'$\beta_r$',size='24')
     py.legend()

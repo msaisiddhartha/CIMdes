@@ -32,7 +32,7 @@ R_tip_te = 0.2
 R = 0.186                         #Radius of the circle
 
 [X04,R04] = [0,0.209]            #(x,r)-coordinates for center of ellipse for shroud
-[a,b] = [0.105761,R04-R_tip_le]
+[ae,be] = [0.105761,R04-R_tip_le]
 
 R_DiffuserExit = 0.3
 
@@ -51,26 +51,36 @@ case = 'mr'
 nstns = nrows+1                         #Number of stations
 nstations = nrows*2
 
+xm   = np.zeros(nstations)
+rm   = np.zeros(nstations)
+x_s = np.zeros((nstations,2))
+r_s = np.zeros((nstations,2))
+
+
 #Scalar properties dor 1D
-U   = np.zeros(nrows)
-V   = np.zeros(nrows)
-Vm  = np.zeros(nrows)
-Vt  = np.zeros(nrows)
-W   = np.zeros(nrows)
-Wt  = np.zeros(nrows)
+U   = np.zeros(nstations)
+V   = np.zeros(nstations)
+Vm  = np.zeros(nstations)
+Vt  = np.zeros(nstations)
+W   = np.zeros(nstations)
+Wt  = np.zeros(nstations)
+Wm  = np.zeros(nstations)
 
 #Intensive properties
-T       = np.zeros(nrows)
-T0      = np.zeros(nrows)
-P       = np.zeros(nrows)
-P0      = np.zeros(nrows)
-alpha   = np.zeros(nrows)
-beta    = np.zeros(nrows)
-M       = np.zeros(nrows)
-Mrel    = np.zeros(nrows)
-T0rel   = np.zeros(nrows)
-P0rel   = np.zeros(nrows)
-sw      = np.zeros(nrows)
+T       = np.zeros(nstations)
+T0      = np.zeros(nstations)
+P       = np.zeros(nstations)
+P0      = np.zeros(nstations)
+alpha   = np.zeros(nstations)
+beta    = np.zeros(nstations)
+M       = np.zeros(nstations)
+Mrel    = np.zeros(nstations)
+T0rel   = np.zeros(nstations)
+P0rel   = np.zeros(nstations)
+rho     = np.zeros(nstations)
+sw      = np.zeros(nstations)
+a       = np.zeros(nstations)
+area    = np.zeros(nstations)
 
 #===============================================================================
 #------------------------Variable Declaration II--------------------------------
@@ -82,16 +92,14 @@ Rx = np.zeros(nrows)
 phi = np.zeros(nrows)
 DH = np.zeros(nrows)                #DeHaller Number
 Df = np.zeros(nrows)              #Diffusion Factor
-area = np.zeros(nstations)
-
-
 
 #Along span and diffrent Sections (_s represents along span)
-Vt_s = np.zeros((nsect, nstns))
-Vm_s = np.zeros((nsect, nstns))
-T_s = np.zeros((nsect, nstns))
-sw_s = np.zeros((nsect, nstns))
-ywall_s = np.zeros((nsect,nstns))
+chord = np.zeros((nsect, nrows))
+Vt_s = np.zeros((nsect, nstations))
+Vm_s = np.zeros((nsect, nstations))
+T_s = np.zeros((nsect, nstations))
+sw_s = np.zeros((nsect, nstations))
+ywall_s = np.zeros((nsect,nstations))
 sol_s = np.zeros((nsect,nrows))
 pitch_s = np.zeros((nsect,nrows))
 #Df = np.zeros((nsect, nrows))
