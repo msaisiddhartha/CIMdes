@@ -1,7 +1,7 @@
 import numpy as np
 
 #----------------------------Input Parameters--------------------------------
-casename   = "multistage"
+casename    = "multistage"
 N           = 22363                               #Speed of Impeller [rpm]
 P01         = 101325                            #Inlet Pressure [Pa]
 T01         = 300                               #Inlet Temperature [K]
@@ -21,6 +21,7 @@ WorkRatio_R1    = 0.35                     #Ratio of work done by Rotor 1
 dalpha          = 25                             #Stator turning angle [deg]
 Y               = 0.03                                #Total Pressure loss coefficient across stator [-]
 Beta6_Blade     = -30                       #Backsweep angle [deg]
+nu              = 1.8e-6
 
 #-----------------------------Flowpath Parameters------------------------------
 R_hub_le = 0.0449341
@@ -103,3 +104,7 @@ ywall_s = np.zeros((nsect,nstations))
 sol_s = np.zeros((nsect,nrows))
 pitch_s = np.zeros((nsect,nrows))
 #Df = np.zeros((nsect, nrows))
+
+stage_num = 1
+fout = []
+data = []

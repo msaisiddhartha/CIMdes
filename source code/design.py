@@ -6,6 +6,7 @@ np_inlt = 5
 np_inlt_eq = 2
 stp = 0.1
 np_outlt = 25
+bw = np.zeros(nstations)
 #------------------------------------------------------------------------------
 #==============================================================================
 #Generating streamlines at hub nad tip using the krain single-stage compressor
@@ -14,7 +15,6 @@ np_outlt = 25
 def streamlines():
     r_hub = np.linspace(R_hub_le,R_hub_te,npts)
     x_hub =  X01 + (R**2-(r_hub-R01)**2)**0.5
-
     #Casing
     r_tip = np.linspace(R_tip_le,R_tip_te,npts)
     x_tip = X04 + (ae/be)*(be**2-(r_tip-R04)**2)**0.5
@@ -62,7 +62,7 @@ def streamlines():
     # Station 1(Inlet)
         rm[i] = np.mean(r_s[i, :])
         area[i] = np.pi * (sum(r_s[i, :])) * ((r_s[i, 0] - r_s[i, 1])**2 + (x_s[i, 0] - x_s[i, 1])**2)**0.5
-    b6 = x_s[5, 0] - x_s[5, 1]
+    bw = ((x_s[:, 0] - x_s[:, 1])**2 + (r_s[:,0] - r_s[:,1])**2)**0.5
 
 
     #-----------------------------Streamlines--------------------------------------
@@ -105,4 +105,4 @@ def streamlines():
     for j in range(len(x_hub_nd)):
         xsl[:, j] = np.linspace(x_hub_nd[j], x_tip_nd[j], nsect)
         rsl[:, j] = np.linspace(r_hub_nd[j], r_tip_nd[j], nsect)
-    return rm, area, r_s, bsf, xsl, rsl
+    return rm, area, r_s, bsf, xsl, rsl, bw
