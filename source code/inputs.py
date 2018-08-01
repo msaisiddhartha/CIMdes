@@ -10,19 +10,17 @@ mdot        = 4                                #Mass flow rate [kg/s]
 delTT       = 176.46                           #Ovearll Temperature rise [K]
 Rgas        = 287                              #Gas constant of Air [J/kg-K]
 Cp          = 1006                               #Specific constant at constant pressure [J/kg-K]
-PR          = 4.8                                #Overall Pressure Ratio
 Z           = [24,24,24]                          #Number of Blades [-]
 nsect       = 5                               #Number of streamlines
 Beta1_Blade = np.array([-36,-62])       #Inlet relative flow angle[deg]
 
 #-----------------------------Stage Parameters---------------------------------
-Eta_R1          = 0.97                           #Rotor 1 Efficiency
-WorkRatio_R1    = 0.35                     #Ratio of work done by Rotor 1
-dalpha          = 25                             #Stator turning angle [deg]
+WorkRatio       = np.array([0.35, 0.65])                     #Ratio of work done by Rotor 1]
+dalpha          = np.array([25])                            #Stator turning angle [deg]
 Y               = 0.03                                #Total Pressure loss coefficient across stator [-]
-Beta6_Blade     = -30                       #Backsweep angle [deg]
+Beta6_Blade     = -45                       #Backsweep angle [deg]
 nu              = 1.8e-6
-
+cl              = [0.005, 0.004, 0.003]
 #-----------------------------Flowpath Parameters------------------------------
 R_hub_le = 0.0449341
 R_tip_le = 0.11274362
@@ -83,6 +81,7 @@ sw      = np.zeros(nstations)
 a       = np.zeros(nstations)
 area    = np.zeros(nstations)
 
+
 #===============================================================================
 #------------------------Variable Declaration II--------------------------------
 #===============================================================================
@@ -93,6 +92,17 @@ Rx = np.zeros(nrows)
 phi = np.zeros(nrows)
 DH = np.zeros(nrows)                #DeHaller Number
 Df = np.zeros(nrows)              #Diffusion Factor
+delTT_Sf = np.zeros(nrows)
+delTT_Inc = np.zeros(nrows)
+delTT_Bl = np.zeros(nrows)
+delTT_cl = np.zeros(nrows)
+delTT_Df = np.zeros(nrows)
+delTT_Rc = np.zeros(nrows)
+delTT_lk = np.zeros(nrows)
+
+delTT_row = np.zeros(2)
+eta_row =  np.zeros(2)
+PR_row = np.zeros(2)
 
 #Along span and diffrent Sections (_s represents along span)
 chord = np.zeros((nsect, nrows))

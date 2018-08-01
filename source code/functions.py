@@ -3,6 +3,37 @@ import subprocess, os
 from  inputs import *
 from design import *
 
+
+
+def ThermoPropRotor(rho0, area, Vt, T0, P0, g):
+    density = rho0
+    error = 5
+    while abs(error) > 1e-6:
+        Vmerid = mdot / (density * area)
+        Vabs = (Vmerid**2 + Vt**2)**0.5
+        Ts = T0 - Vabs**2 / (2 * Cp)
+        Ps = P0 * ((Ts / T0)**((g / (g - 1))))
+        rho2p = Ps / (Rgas * Ts)
+        error = (1 - rho2p / density) * 100
+        density = rho2p
+        #print(density)
+    return density, Vmerid, Vabs, Ts, Ps
+
+def ThermoPropStator(rho0, area, alpha_out, T0, P0, g):
+    density = rho0
+    error = 5
+    while abs(error) > 1e-6:
+        Vmerid = mdot / (density * area)
+        Vtang = np.tan(np.deg2rad(alpha_out)) * Vmerid
+        Vabs = (Vmerid**2 + Vtang**2)**0.5
+        Ts = T0 - Vabs**2 / (2 * Cp)
+        Ps = P0 * ((Ts / T0)**((g / (g - 1))))
+        rho2p = Ps / (Rgas * Ts)
+        error = (1 - rho2p / density) * 100
+        density = rho2p
+
+    return density, Vmerid, Vabs, Ts, Ps, Vtang
+
 def DegofReac(P2, P1, P0):
     Rx = P1 - P0 / (P2 - P0)
     return Rx
