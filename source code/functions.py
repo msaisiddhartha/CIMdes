@@ -34,6 +34,10 @@ def ThermoPropStator(rho0, area, alpha_out, T0, P0, g):
 
     return density, Vmerid, Vabs, Ts, Ps, Vtang
 
+#def Choke_check():
+    #M = 
+
+
 def DegofReac(P2, P1, P0):
     Rx = P1 - P0 / (P2 - P0)
     return Rx

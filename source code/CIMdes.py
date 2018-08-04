@@ -53,14 +53,14 @@ for i in range(0, nstations-2):
         T[i+1] = T[i]
         P[i+1]=P[i]
         Wt[i+1] = Vt[i+1] - U[i+1]
-        alpha[i+1] = np.degrees(np.arctan(Vt[i+1] / Vm[i+1]))
+        alpham[i+1] = np.degrees(np.arctan(Vt[i+1] / Vm[i+1]))
 
     if i%4 == 2:
         T0[i+1] = T0[i]
         P0[i+1] = P0[i] - Y * (P0[i] - P0[i])
-        alpha[i+1] = alpha[i] - dalpha[i//4]
+        alpham[i+1] = alpham[i] - dalpha[i//4]
         rho0 = P0[i+1] / (Rgas * T0[i+1])
-        rho[i+1], Vm[i+1], V[i+1], T[i+1], P[i+1], Vt[i+1] = ThermoPropStator(rho0, area[i+1], alpha[i+1], T0[i+1], P0[i+1], g)
+        rho[i+1], Vm[i+1], V[i+1], T[i+1], P[i+1], Vt[i+1] = ThermoPropStator(rho0, area[i+1], alpham[i+1], T0[i+1], P0[i+1], g)
         Wt[i+1] = Vt[i+1] - U[i+1]
 
 #-----------------------------R2 Outlet(Station 6)-----------------------------
@@ -68,11 +68,11 @@ T0[4] = T0[5] - delTT_row[1]
 P0[5] = P0[4] * (T0[5]/T0[4])**(g / (g - 1))
 Vt[5] = (Cp * (T0[5] - T0[4]) + U[4] * Vt[4]) / U[5]
 Wt[5] = Vt[5] - U[5]
-beta[5] = Beta6_Blade
-Vm[5] = Wt[5] / np.tan(np.deg2rad(beta[5]))
+betam[5] = Beta6_Blade
+Vm[5] = Wt[5] / np.tan(np.deg2rad(betam[5]))
 rho06 = P0[5] / (Rgas * T0[5])
 rho[5] = mdot / (area[5] * Vm[5])
-alpha[5] = np.rad2deg(np.arctan(Vt[5] / Vm[5]))
+alpham[5] = np.rad2deg(np.arctan(Vt[5] / Vm[5]))
 V[5] = (Vt[5]**2 + Vm[5]**2)**0.5
 T[5] = T0[5] - V[5]**2 / (2 * Cp)
 P[5] = P0[5] * ((T[5] / T0[5])**((g / (g - 1))))
@@ -82,8 +82,8 @@ Wm = Vm
 W = (Wt**2 + Wm**2)**0.5
 M = V / a
 Mrel = W / a
-beta = np.degrees(np.arctan(Wt / Vm))
-alpha = np.rad2deg(np.arctan(Vt / Vm))
+betam = np.degrees(np.arctan(Wt / Vm))
+alpham = np.rad2deg(np.arctan(Vt / Vm))
 T0rel = T + (W**2 / (2 * Cp))
 P0rel = P + (0.5 * rho * W**2)
 sw = rm * Vt
@@ -106,7 +106,7 @@ for i in range(nstations):
 
 sw_s = r_span * Vt_s
 Wt_s = Vt_s - Ur
-beta_s = np.degrees(np.arctan(Wt_s / Vm_s))
+betam_s = np.degrees(np.arctan(Wt_s / Vm_s))
 alpha_s = np.degrees(np.arctan(Vt_s / Vm_s))
 V_s = (Vt_s**2 + Vm_s**2)**0.5
 W_s = (Wt_s**2 + Vm_s**2)**0.5
@@ -129,7 +129,7 @@ for i in range(nrows):
         row_name = "R"
     if (i + 1) % 2 == 0:
         row_name = "S"
-    create_tblade3(i, c, row_name, stagenum, data, nsect, bsf, beta_s, alpha_s, Mrel_s, M_s, x_s, r_s, span ,xsl, rsl)
+    create_tblade3(i, c, row_name, stagenum, data, nsect, bsf, betam_s, alpha_s, Mrel_s, M_s, x_s, r_s, span ,xsl, rsl)
     flog = open('output_' + row_name + str(stagenum) + '.txt', 'r')
     chord[:,i] = chord_lookup(flog, row_name, stagenum, keyword)
     pitch[i] = 2 * np.pi * rm[c + 1] / Z[i]
@@ -146,23 +146,27 @@ for i in range(nrows):
         DH[i] = dehaller(W[c+1], W[c])
         Re = Recalc(chord[mean_num, i], rho[c], W[c])
         Df[i] = DiffusionFact(Cp, sw[i], DH[i], Wt[c+1], Wt[c], W[c], sol[i], W[c+1], rm[c], W_s[-1, c], U[c], T0[c+1], T0[c],  r_s[c, -1], axial)
-        delTT_Inc[i] = IncLoss(Vm[c], Wt[c], beta[c])
-        delTT_Sf[i] = SkinFricLoss(W[c+1], W[c], r_s[c,0], r_s[c,1], beta[c], Z[i], Re, chord[mean_num, i])
-        delTT_Rc[i] = RecirculationLoss(beta[c+1], Df[i], U[c+1])
+        dH_Loss[0, i] = IncLoss(Vm[c], Wt[c], betam[c])
+        dH_Loss[1,i] = SkinFricLoss(W[c+1], W[c], r_s[c,0], r_s[c,1], betam[c], Z[i], Re, chord[mean_num, i])
+        dH_Loss[4,i] = RecirculationLoss(betam[c+1], Df[i], U[c+1])
 
     if row_name == "S":
         DH[i] = dehaller(V[c+1], V[c])
         Re = Recalc(chord[mean_num, i], rho[c], V[c])
         Df[i] = DiffusionFact(Cp, sw[i], DH[i], Vt[c+1], Vt[c], V[c], sol[i], V[c+1], rm[c], V_s[-1, c], U[c], T0[c+1], T0[c],  r_s[c, -1], axial)
-        delTT_Inc[i] = IncLoss(Vm[c], Wt[c], beta[c])
-        delTT_Sf[i] = SkinFricLoss(V[c+1], V[c], r_s[c,0], r_s[c,1], alpha[c], Z[i], Re, chord[mean_num, i])
-        delTT_Rc[i] = RecirculationLoss(alpha[c+1], Df[i], U[c+1])
+        dH_Loss[0, i] = IncLoss(Vm[c], Wt[c], betam[c])
+        dH_Loss[1,i] = SkinFricLoss(V[c+1], V[c], r_s[c,0], r_s[c,1], alpham[c], Z[i], Re, chord[mean_num, i])
+        dH_Loss[4,i] = RecirculationLoss(alpham[c+1], Df[i], U[c+1])
     #Rx[i] = DegofReac(P[c + 2], P[c + 1], P[c])
-    delTT_lk[i] = LeakageLoss(bw[c+1], bw[c], rm[c+1], rm[c], Vt[c+1], Vt[c], Z[i], cl[i], rho[c+1], U[c+1], chord[mean_num, i])
-    delTT_Bl[i] = BladeLoadLoss(Df[i], U[c+1])
-    delTT_Df[i] = DiskFricLoss(U[c+1], rm[c+1], rho[c+1], rho[c], Re)
-    delTT_cl[i] = ClearanceLoss(r_s[c,0], r_s[c,1], rm[c+1], cl[i], bw[c+1], U[c+1])
+    dH_Loss[2,i] = BladeLoadLoss(Df[i], U[c+1])
+    dH_Loss[3,i] = ClearanceLoss(r_s[c,0], r_s[c,1], rm[c+1], cl[i], bw[c+1], U[c+1])
+    dH_Loss[5,i] = np.fabs(LeakageLoss(bw[c+1], bw[c], rm[c+1], rm[c], Vt[c+1], Vt[c], Z[i], cl[i], rho[c+1], U[c+1], chord[mean_num, i]))
+    dH_Loss[6,i] = DiskFricLoss(U[c+1], rm[c+1], rho[c+1], rho[c], Re)
+
     c += 2
+
+for i in range(7):
+    dH_Loss[i,3] = np.sum(dH_Loss[i,0:3])
 
 #------------------------------------------------------------------------------
 #==============================================================================
@@ -174,22 +178,36 @@ for i in range(nrows):
 ywall_s = 6 * ((Vm / 0.0000157)**(-7 / 8)) * ((0.2)**(1 / 8))
 print("Estimate of first cell wall distance =", np.amin(ywall_s))
 
-PR_r = np.zeros(2)
-TR_r = np.zeros(2)
-TR_r = np.zeros(2)
-Eta_r = np.zeros(2)
+PR_r = np.zeros(3)
+TR_r = np.zeros(3)
+Eta_r = np.zeros(3)
 
-PR = P0[-1]/P0[0]
-TR = T0[-1]/T0[0]
-Eta = (PR**((g-1)/g)-1)/(TR-1)
+dH[0,0] = Cp*(T0[1] - T0[0])
+dH[0,1] = Cp*(T0[3] - T0[2])
+dH[0,2] = Cp*(T0[5] - T0[4])
+dH[0,3] = Cp*(T0[5] - T0[0])
+
+dH[1,0] = np.sum(dH_Loss[0:4,0])
+dH[1,1] = np.sum(dH_Loss[0:4,1])
+dH[1,2] = np.sum(dH_Loss[0:4,2])
+dH[1,3] = np.sum(dH_Loss[0:4,3])
+
+dH[2,0] = np.sum(dH_Loss[4:7,0])
+dH[2,1] = np.sum(dH_Loss[4:7,1])
+dH[2,2] = np.sum(dH_Loss[4:7,2])
+dH[2,3] = np.sum(dH_Loss[4:7,3])
+
+Eta_r = (dH[0,:]-dH[1,:])/(dH[0,:]+dH[2,:])
 
 PR_r[0] = P0[1]/P0[0]
 TR_r[0] = T0[1]/T0[0]
-Eta_r[0] = (PR_r[0]**((g-1)/g)-1)/(TR_r[0]-1)
 
 PR_r[1] = P0[5]/P0[4]
 TR_r[1] = T0[5]/T0[4]
-Eta_r[1] = (PR_r[1]**((g-1)/g)-1)/(TR_r[1]-1)
+
+
+TR = T0[-1]/T0[0]
+PR = (1+Eta_r[-1]*(TR-1))**(g/(g-1))
 
 fmean = open("meanlineflowproperties.dat", 'w')
 fmean.write("Row    Solidity    DF    DeHallerNumber      Rx      phi\n")
@@ -209,18 +227,18 @@ for i in range(nstns):
                 Vm_s[0, i] + '    ' + '%2.4f' % T_s[0, i] + '    ' + '%2.4f' % M_s[0, i] + '\n')
 fmean.write('\n\n')
 fmean.write("Overall Pressure ratio = %2.4f" % PR + '\n')
-fmean.write("Overall Efficiency = %2.4f" % Eta + '\n')
+fmean.write("Overall Efficiency = %2.4f" % Eta_r[3] + '\n')
 fmean.write('\n')
 fmean.write("Rotor 1 Pressure ratio = %2.4f" % PR_r[0] + '\n')
 fmean.write("Rotor 1 Efficiency = %2.4f" % Eta_r[0] + '\n')
 fmean.write('\n')
-fmean.write("Rotor 2 Pressure ratio = %2.4f" % PR_r[1] + '\n')
-fmean.write("Rotor 2 Efficiency = %2.4f" % Eta_r[1] + '\n')
+fmean.write("Rotor 2 Pressure ratio = %2.4f" % PR_r[2] + '\n')
+fmean.write("Rotor 2 Efficiency = %2.4f" % Eta_r[2] + '\n')
 fmean.write('\n')
 fmean.close()
 
 
-plots(xsl, rsl, Vm_s, Vt_s, W_s, Wt_s, alpha_s, beta_s, span, nstns, bsf)
+plots(xsl, rsl, Vm_s, Vt_s, W_s, Wt_s, alpha_s, betam_s, span, nstns, bsf)
 
 stop = timeit.default_timer()
 print(" Execution Time: ", '%1.3f' % (stop - start), "seconds")
