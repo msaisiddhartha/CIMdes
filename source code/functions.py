@@ -4,7 +4,6 @@ from  inputs import *
 from design import *
 
 
-
 def ThermoPropRotor(rho0, area, Vt, T0, P0, g):
     density = rho0
     error = 5
@@ -34,8 +33,39 @@ def ThermoPropStator(rho0, area, alpha_out, T0, P0, g):
 
     return density, Vmerid, Vabs, Ts, Ps, Vtang
 
+def Properties_add(g, T1, Vm1, Wt1, V1, W1, P1, rho1, Vt1, phi_angle1,Vz1):
+    a1      = (g * Rgas * T1)**0.5
+    Wm1     = Vm1
+    W1      = (Wt1**2 + Wm1**2)**0.5
+    M1      = V1 / a1
+    Mrel1   = W1 / a1
+    T0rel1  = T1 + (W1**2 / (2 * Cp))
+    P0rel1  = P1 + (0.5 * rho1 * W1**2)
+    betam1  = np.degrees(np.arctan(Wt1 / Vm1))
+    alpham1 = np.degrees(np.arctan(Vt1 / Vm1))
+    Vz1     = Vm1*np.cos(np.radians(phi_angle1))
+    Vr1     = Vm1*np.cos(np.radians(phi_angle1))
+    betaz1  = np.degrees(np.arctan(Wt1 / Vz1))
+    alphaz1 = np.degrees(np.arctan(Vt1 / Vz1))
+    return a1, Wm1, W1, M1, Mrel1, T0rel1 ,P0rel1 ,betam1 ,alpham1,Vz1,Vr1, betaz1, alphaz1
+
+def free_vortex(k, rm1, Vt1, r_span1, Vm1, T1, g, Ur1):
+    Vm_s1[:,k] = Vm1[k]
+    T_s1[:,k] = T1[k]
+    for j in range(nsect):
+        Vt_s1[j, k] = rm1[k] * Vt1[k] / r_span1[j, k]
+    sw_s1[:,k]      = r_span1[:,k]*Vt_s1[:,k]
+    Wt_s1[:,k]      = Vt_s1[:,k] - Ur1[:,k]
+    betam_s1[:,k]   = np.degrees(np.arctan(Wt_s1[:,k] / Vm_s1[:,k]))
+    alpham_s1[:,k]  = np.degrees(np.arctan(Vt_s1[:,k] / Vm_s1[:,k]))
+    V_s1[:,k]       = (Vt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
+    W_s1[:,k]       = (Wt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
+    a_s1[:,k]       = (g * T_s1[:,k] * Rgas)**0.5
+    M_s1[:,k]       = V_s1[:,k] / a_s1[:,k]
+    Mrel_s1[:,k]    = W_s1[:,k] / a_s1[:,k]
+    return V_s1[:,k], W_s1[:,k], betam_s1[:,k], alpham_s1[:,k], M_s1[:,k], Mrel_s1[:,k]
 #def Choke_check():
-    #M = 
+    #M =
 
 
 def DegofReac(P2, P1, P0):
@@ -66,6 +96,21 @@ def chord_lookup(flog, row_name, stagenum, keyword):
     flog.close()
     return ch / 1000
 
+def stagger_def(rn, mn, beta0):
+    flog = open("splinedata_section." + str(mn) + ".R" + str(rn) + ".dat", 'r')
+    nskip = 4
+    npt = 3
+    for i in range(nskip):
+        datastr = flog.readline()
+    line = np.zeros((npt,1))
+    for i in range(npt):
+        datastr = flog.readline()
+        datam = datastr.split()
+        line[i,0] = datam[3]
+    camber_ang = np.degrees(np.arctan(line[-2]))
+    stagger_ang = beta0 - camber_ang
+    flog.close()
+    return stagger_ang
 
 def angles(curr_row):
     if curr_row == 1:
@@ -117,7 +162,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
 # Flow angle switch
 def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_s, alpha_s, Mrel_s, M_s, x_s, r_s, span, xsl, rsl):
-    f = open("tblade3input." + str(k + 1) + "." + str(casename) + ".dat", "w")
+    f = open(str(casename) + "." + str(k + 1) + ".dat", "w")
     f.write("Input parameters (version 1.1)" + '\n')
     f.write("    " + row_name + str(stagenum) + '\n')
     f.write(" Blade row #:" + '\n')
@@ -131,9 +176,9 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_s, alpha_
     f.write(" Angles in the input file (0=Beta_z (default),1=Beta_r):" + '\n')
     f.write("    " + str(angles(k + 1)) + '\n')
     f.write(" Airfoil camber defined by curvature control (0=no,1=yes):" + '\n')
-    f.write("    " + str(0) + '\n')
+    f.write("    " + str(1) + '\t'+ 'spanwise_spline' +  '\n')
     f.write(" Airfoil Thickness distribution (0=Wennerstrom,1=Spline):" + '\n')
-    f.write("    " + str(0) + '\n')
+    f.write("    " + str(1) + '\n')
     f.write(" Airfoil Thickness multiplier (0=no,1=yes):" + '\n')
     f.write("    " + str(0) + '\n')
     f.write(" Airfoil LE defined by spline (0=no,1=yes):" + '\n')

@@ -64,8 +64,8 @@ def streamlines():
         rm[i] = np.mean(r_s[i, :])
         area[i] = np.pi * (sum(r_s[i, :])) * ((r_s[i, 0] - r_s[i, 1])**2 + (x_s[i, 0] - x_s[i, 1])**2)**0.5
     bw = ((x_s[:, 0] - x_s[:, 1])**2 + (r_s[:,0] - r_s[:,1])**2)**0.5
-    gamma = 90 - np.fabs(np.degrees(np.arctan((r_s[:,0] - r_s[:,1])/(x_s[:,0] - x_s[:,1]))))
-
+    phi = np.fabs(np.degrees(np.arctan((r_s[:,0] - r_s[:,1])/(x_s[:,0] - x_s[:,1]))))
+    gamma = 90- phi
     #-----------------------------Streamlines--------------------------------------
 
     # Inlet Streamlines
@@ -106,4 +106,4 @@ def streamlines():
     for j in range(len(x_hub_nd)):
         xsl[:, j] = np.linspace(x_hub_nd[j], x_tip_nd[j], nsect)
         rsl[:, j] = np.linspace(r_hub_nd[j], r_tip_nd[j], nsect)
-    return rm, area, r_s, bsf, xsl, rsl, bw, gamma
+    return rm, area, r_s, bsf, xsl, rsl, bw, gamma, phi
