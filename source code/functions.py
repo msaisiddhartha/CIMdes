@@ -1,5 +1,5 @@
 import numpy as np
-import subprocess, os
+import subprocess, os, errno
 from  inputs import *
 from design import *
 
@@ -44,7 +44,7 @@ def Properties_add(g, T1, Vm1, Wt1, V1, W1, P1, rho1, Vt1, phi_angle1,Vz1):
     betam1  = np.degrees(np.arctan(Wt1 / Vm1))
     alpham1 = np.degrees(np.arctan(Vt1 / Vm1))
     Vz1     = Vm1*np.cos(np.radians(phi_angle1))
-    Vr1     = Vm1*np.cos(np.radians(phi_angle1))
+    Vr1     = Vm1*np.sin(np.radians(phi_angle1))
     betaz1  = np.degrees(np.arctan(Wt1 / Vz1))
     alphaz1 = np.degrees(np.arctan(Vt1 / Vz1))
     return a1, Wm1, W1, M1, Mrel1, T0rel1 ,P0rel1 ,betam1 ,alpham1,Vz1,Vr1, betaz1, alphaz1
@@ -63,13 +63,11 @@ def free_vortex(k, rm1, Vt1, r_span1, Vm1, T1, g, Ur1):
     a_s1[:,k]       = (g * T_s1[:,k] * Rgas)**0.5
     M_s1[:,k]       = V_s1[:,k] / a_s1[:,k]
     Mrel_s1[:,k]    = W_s1[:,k] / a_s1[:,k]
-    return V_s1[:,k], W_s1[:,k], betam_s1[:,k], alpham_s1[:,k], M_s1[:,k], Mrel_s1[:,k]
-#def Choke_check():
-    #M =
 
+    return V_s1[:,k], W_s1[:,k], betam_s1[:,k], alpham_s1[:,k], M_s1[:,k], Mrel_s1[:,k], Wt_s1[:,k], Vt_s1[:,k]
 
 def DegofReac(P2, P1, P0):
-    Rx = P1 - P0 / (P2 - P0)
+    Rx = (P1 - P0) / (P2 - P0)
     return Rx
 
 def Recalc(L, rho, V):
@@ -106,21 +104,21 @@ def stagger_def(rn, mn, beta0):
     for i in range(npt):
         datastr = flog.readline()
         datam = datastr.split()
-        line[i,0] = datam[3]
-    camber_ang = np.degrees(np.arctan(line[-2]))
+        line[i] = datam[3]
+    camber_ang = np.degrees(np.arctan(line[2]))
     stagger_ang = beta0 - camber_ang
     flog.close()
     return stagger_ang
 
-def angles(curr_row):
-    if curr_row == 1:
-        return 0
-    if curr_row == 2:
-        ang = 2
-    else:
-        ang = 1
-    return ang
-
+def thk_lookup(rn, mn):
+    flog = open("blade_Section_data.R" + str(rn) + ".dat", 'r')
+    nskip = 7
+    for i in range(nskip):
+        datastr = flog.readline()
+    datastr = flog.readline()
+    datam = datastr.split()
+    thk = np.float(datam[11])
+    return thk
 
 def inc_angle(k):
     IncAngR1LE = np.zeros(nsect)
@@ -161,7 +159,11 @@ print()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
 # Flow angle switch
-def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_s, alpha_s, Mrel_s, M_s, x_s, r_s, span, xsl, rsl):
+def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_in, beta_out, Mrel_s, x_s, r_s, span, xsl, rsl):
+    x_cp_le = np.linspace(x_s[cntr,0], x_s[cntr,1], nsect)
+    r_cp_le = np.linspace(r_s[cntr,0], r_s[cntr,1], nsect)
+    x_cp_te = np.linspace(x_s[cntr+1,0], x_s[cntr+1,1], nsect)
+    r_cp_te = np.linspace(r_s[cntr+1,0], r_s[cntr+1,1], nsect)
     f = open(str(casename) + "." + str(k + 1) + ".dat", "w")
     f.write("Input parameters (version 1.1)" + '\n')
     f.write("    " + row_name + str(stagenum) + '\n')
@@ -174,11 +176,11 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_s, alpha_
     f.write(" Number of streamlines:" + '\n')
     f.write("    " + str(nsect) + '\n')
     f.write(" Angles in the input file (0=Beta_z (default),1=Beta_r):" + '\n')
-    f.write("    " + str(angles(k + 1)) + '\n')
+    f.write("    " + str(ang[k]) + " inci_dev_spline" + '\n')
     f.write(" Airfoil camber defined by curvature control (0=no,1=yes):" + '\n')
     f.write("    " + str(1) + '\t'+ 'spanwise_spline' +  '\n')
     f.write(" Airfoil Thickness distribution (0=Wennerstrom,1=Spline):" + '\n')
-    f.write("    " + str(1) + '\n')
+    f.write("    " + str(0) + '\n')
     f.write(" Airfoil Thickness multiplier (0=no,1=yes):" + '\n')
     f.write("    " + str(0) + '\n')
     f.write(" Airfoil LE defined by spline (0=no,1=yes):" + '\n')
@@ -191,14 +193,9 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_s, alpha_
         # stagger is positive in T-Blade3 for Compressors (convention)
         #f.write(str(i + stagger[i] + stagger[i] + mrel[i] + chrdr_nd[i] + "0.2000" + "0.0000" + "0.0000" + "0.0000") + '\n')
         f.write(('%02d' % (i + 1)) + "   ")
-        if k % 2 == 0:
-            f.write(('%2.8f' % beta_s[i, cntr]) + "  ")
-            f.write(('%2.8f' % beta_s[i, cntr + 1]) + "  ")
-            f.write(('%2.8f' % Mrel_s[i, cntr]) + "  ")
-        if k % 2 == 1:
-            f.write(('%2.8f' % alpha_s[i, cntr]) + "  ")
-            f.write(('%2.8f' % alpha_s[i, cntr + 1]) + "  ")
-            f.write(('%2.8f' % M_s[i, cntr]) + "  ")
+        f.write(('%2.8f' % beta_in[i, cntr]) + "  ")
+        f.write(('%2.8f' % beta_out[i, cntr + 1]) + "  ")
+        f.write(('%2.8f' % Mrel_s[i, cntr]) + "  ")
         f.write(('%2.8f' % chrdr_nd) + "  ")
         f.write(('%2.8f' % 0.0150) + "  ")
         f.write(('%2.8f' % 0.0000) + "  ")
@@ -207,13 +204,13 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_s, alpha_
     f.write('\n')
     f.write(" LE / TE curve (x,r) definition :" + '\n')
     f.write(" Number of Curve points :" + '\n')
-    f.write("    " + str('2') + '\n')
+    f.write("    " + str(nsect) + '\n')
     f.write("   xLE          rLE           xTE          rTE" + '\n')
-    for i in range(2):
-        f.write("    " + ('%2.8f' % (x_s[cntr, i] / bsf)) + "  ")
-        f.write(('%2.8f' % (r_s[cntr, i] / bsf)) + "  ")
-        f.write(('%2.8f' % (x_s[cntr + 1, i] / bsf)) + "  ")
-        f.write(('%2.8f' % (r_s[cntr + 1, i] / bsf)) + "\n")
+    for i in range(nsect):
+        f.write("    " + ('%2.8f' % (x_cp_le[i] / bsf)) + "  ")
+        f.write(('%2.8f' % (r_cp_le[i] / bsf)) + "  ")
+        f.write(('%2.8f' % (x_cp_te[i] / bsf)) + "  ")
+        f.write(('%2.8f' % (r_cp_te[i] / bsf)) + "\n")
     f.write('\n')
     f.write(" # Airfoil type and Variable Radial Stacking information.         #" + '\n')
     f.write(" # stack_u: % chord stack (0.00 to 100.00).                       #" + '\n')
@@ -302,9 +299,17 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_s, alpha_
         f.write('0 0' + '\n')
     f.close()
 
-#Executing T-blade3 and generate .geomturbo file
+    #Executing T-blade3 and generate .geomturbo file
     fout = open('output_' + row_name + str(stagenum) + '.txt', 'w')
     subprocess.Popen(["tblade3", f.name], stdout=fout,
                      stderr=fout).communicate()[0]
-    subprocess.call("geomturbo " + f.name + " 241 ")
+    #subprocess.call("geomturbo " + f.name + " 241 ")
     fout.close()
+    return f
+
+def make_sure_path_exists(path):
+	try:
+		os.makedirs(path)
+	except OSError as exception:
+		if exception.errno != errno.EEXIST:
+			raise

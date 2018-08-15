@@ -6,17 +6,17 @@ import math
 # Suffix nomenclature: 0-inlet/LE; 1-exit/TE
 
 
-def SlipFactor(beta_b1, gamma1, Z, s, phi, dBetadm1, rho1, blade_width1, thk):
-    F = 1 - np.sin(np.pi / Z) * np.sin(np.pi / Z +
-                                       np.radians(beta_b1)) * np.cos(np.radians(beta_b1)) * np.sin(np.radians(gamma1)) - thk/(s*gamma1) #Shape FActor
+def SlipFactor(beta_b1, gamma1, Z, s, phi1, dBetadm1, rho1, blade_width1, thk):
+    F = 1 + 2*np.sin(np.pi / Z) * np.sin((np.pi / Z) +
+                                       np.radians(beta_b1)) * np.cos(np.radians(beta_b1)) * np.sin(np.radians(gamma1)) - thk/(s*np.cos(np.radians(beta_b1))) #Shape FActor
     dSlip_rad = F * np.pi * \
         np.cos(np.radians(beta_b1)) * np.sin(np.radians(gamma1)) / Z
-    dSlip_turn = F * s * phi1 * dBetadm1 / (4 * np.cos(np.radians(beta_b1)))
-    dSlip_pass = F * phi1 * s * \
-        np.sin(np.radian(beta_b1)) / (4 * rho1 * blade_width1)
+    dSlip_turn = F * s * phi1 * dBetadm1 *0.1 / (4 * np.cos(np.radians(beta_b1)))
+    #dSlip_pass = F * phi1 * s * np.sin(np.radians(beta_b1)) / (4 * rho1 * blade_width1)
+    dSlip_pass = 0
     slip = 1 - dSlip_rad - dSlip_turn - dSlip_pass
 
-    return slip
+    return slip, F, dSlip_rad, dSlip_turn, dSlip_pass
 
 def IncLoss(Vm0, Wt0, betab0):
     f_inc = 0.5

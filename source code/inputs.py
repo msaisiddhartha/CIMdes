@@ -15,7 +15,7 @@ nsect       = 5                               #Number of streamlines
 Beta1_Blade = np.array([-36,-62])       #Inlet relative flow angle[deg]
 
 #-----------------------------Stage Parameters---------------------------------
-WorkRatio       = np.array([0.35, 0.65])                     #Ratio of work done by Rotor 1]
+WorkRatio       = np.array([0.25, 0.75])                     #Ratio of work done by Rotor 1]
 dalpha          = np.array([25])                            #Stator turning angle [deg]
 Y               = 0.03                                #Total Pressure loss coefficient across stator [-]
 Bckswp          = -45                       #Backsweep angle [deg]
@@ -37,6 +37,7 @@ R_DiffuserExit  = 0.3
 
 #------------------------------Tblade3 Input-----------------------------------
 airfoiltype     = 'sect1'
+ang             = [0,0,2]
 chrdr_nd        = 1.165
 gap_rs          = [0.0025,0.00125]
 s1_len          = [0.04,0.02]
@@ -61,6 +62,8 @@ U   = np.zeros((nstations,1))
 V   = np.zeros((nstations,1))
 Vm  = np.zeros((nstations,1))
 Vt  = np.zeros((nstations,1))
+Vz  = np.zeros((nstations,1))
+Vr  = np.zeros((nstations,1))
 W   = np.zeros((nstations,1))
 Wt  = np.zeros((nstations,1))
 Wm  = np.zeros((nstations,1))
@@ -72,6 +75,8 @@ P       = np.zeros((nstations,1))
 P0      = np.zeros((nstations,1))
 alpham   = np.zeros((nstations,1))
 betam    = np.zeros((nstations,1))
+alphaz   = np.zeros((nstations,1))
+betaz    = np.zeros((nstations,1))
 M       = np.zeros((nstations,1))
 Mrel    = np.zeros((nstations,1))
 T0rel   = np.zeros((nstations,1))
@@ -100,9 +105,20 @@ TR = np.zeros(nrows+1)
 #Along span and diffrent Sections (_s represents along span)
 chord = np.zeros((nsect, nrows))
 Vt_s = np.zeros((nsect, nstations))
+Wt_s = np.zeros((nsect, nstations))
 Vm_s = np.zeros((nsect, nstations))
 T_s = np.zeros((nsect, nstations))
 sw_s = np.zeros((nsect, nstations))
+Wt_s= np.zeros((nsect, nstations))
+betam_s= np.zeros((nsect, nstations))
+alpham_s= np.zeros((nsect, nstations))
+V_s= np.zeros((nsect, nstations))
+Vr_s= np.zeros((nsect, nstations))
+Vz_s= np.zeros((nsect, nstations))
+W_s= np.zeros((nsect, nstations))
+a_s= np.zeros((nsect, nstations))
+M_s= np.zeros((nsect, nstations))
+Mrel_s= np.zeros((nsect, nstations))
 ywall_s = np.zeros((nsect,nstations))
 sol_s = np.zeros((nsect,nrows))
 pitch_s = np.zeros((nsect,nrows))
