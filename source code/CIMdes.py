@@ -16,10 +16,9 @@ np.seterr(divide='ignore', invalid='ignore')
 
 start = timeit.default_timer()
 
-
 workdir = os.getcwd()
 
-rm, area, r_s, bsf, xsl, rsl, bw, gamma = streamlines()
+rm, area, r_s, bsf, xsl, rsl, bw, gamma = streamlines(nrows)
 
 stagenum = 1
 rownum=0
@@ -67,7 +66,7 @@ for i in range(0, nstations-1):
     if i%4==0:
         #Along meanline
         T0[i+1] = T0[i] + delTT_row[i//4]
-        print("Chekcing for R" + str(stagenum) + " efficiency convergence")
+        print("Checking for R" + str(stagenum) + " efficiency convergence")
         cntr=0
         while np.fabs(error)>1e-6:
             P0[i+1] = P0[i] * (1+Eta[rownum]*((T0[i+1]/T0[i])-1))**(g / (g - 1))
@@ -251,7 +250,7 @@ for i in range(0, nstations-1):
 #subprocess.call("combine_geomturbo.sh")
 
 TR[-1] = T0[-1]/T0[0]
-dH_Loss[:,3] = np.sum(dH_Loss[:,0:3], axis =1)  #Overall enthaly loss
+dH_Loss[:,-1] = np.sum(dH_Loss[:,0:-1], axis =1)  #Overall enthaly loss
 dH[1,:] = np.sum(dH_Loss[0:4,:], axis =0)   #Entalpy loss due to internal losses for each blade row
 dH[2,:] = np.sum(dH_Loss[4:7,:], axis =0)   #Entalpy loss due to external losses for each blade row
 
@@ -291,6 +290,8 @@ for i in range(nrows+1):
 
 fmean.write('\n' + tabulate(row_list, headers = "firstrow") + '\n')
 
+
+
 station_qty = ["J","Swirl", "Vt[m/s]","Vm[m/s]", "Vz[m/s]",  " Vr[m/s]",  " T[k]",  "Mach" , "Rel.Mach" , "P0[Pa]",  "T0[k]"]
 station_list = [[] for i in range(nstations + 1)]
 for i in range(nstations+1):
@@ -311,10 +312,21 @@ for i in range(nstations+1):
         station_list[i].append("%.4f" % float(T0[i-1]))
 fmean.write('\n' + tabulate(station_list, headers = "firstrow") + '\n')
 
-loss_qty_rows = ["Inc. Loss", "Skin Friction Loss", "Blade Loading Loss", "Clearance Loss", "Recirculation Loss", "Leakage Loss", "Disk Friction Loss"]
-loss = pd.DataFrame(data = dH_Loss.T, index = ["R1", "S1", "R2", "Overall"], columns = loss_qty_rows).astype('float')
-fmean.write('\n' + tabulate(loss, headers = loss_qty_rows, numalign="left") + '\n')
 
+loss_qty_rows = ["Inc. Loss", "Skin Friction Loss", "Blade Loading Loss", "Clearance Loss", "Recirculation Loss", "Leakage Loss", "Disk Friction Loss"]
+count = 0
+row_index = []
+for i in range(0, nrows):
+    if i%2==0:
+        rname = 'R'
+        count += 1
+    else:
+        rname = 'S'
+    row_index.append(rname + str(count))
+row_index.append("Overall")
+
+loss = pd.DataFrame(data = dH_Loss.T, index = row_index, columns = loss_qty_rows).astype('float')
+fmean.write('\n' + tabulate(loss, headers = loss_qty_rows, numalign="left") + '\n')
 fmean.write('\n\n')
 fmean.write("Overall Pressure ratio = %2.4f" % PR[-1] + '\n')
 fmean.write("Overall Efficiency = %2.4f" % Eta[-1] + '\n')
@@ -322,7 +334,7 @@ fmean.write('\n')
 fmean.close()
 
 
-plots(xsl, rsl, Vm_s, Vt_s, W_s, Wt_s, alpham_s, betam_s, span, nstns, bsf)
+plots(xsl, rsl, Vm_s, Vt_s, W_s, Wt_s, alpham_s, betam_s, span, nstns, bsf, row_index)
 
 stop = timeit.default_timer()
 print(" Execution Time: ", '%1.3f' % (stop - start), "seconds")

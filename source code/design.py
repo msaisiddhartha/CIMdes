@@ -13,7 +13,7 @@ gamma = np.zeros(nstations)
 #Generating streamlines at hub nad tip using the krain single-stage compressor
 #==============================================================================
 #Hub
-def streamlines():
+def streamlines(nst):
     r_hub = np.linspace(R_hub_le,R_hub_te,npts)
     x_hub =  X01 + (R**2-(r_hub-R01)**2)**0.5
     #Casing
@@ -37,26 +37,29 @@ def streamlines():
 
     r_s[0,:] = np.array([r_hub[0],r_tip[0]])
     x_s[0, :] = np.array([x_hub[0],x_tip[0]])
-
-    r_s[1, :] = np.array([0.075,0.12])
-    x_s[1, :] = np.array([X01 + (R**2-(r_s[1, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
-                      (r_s[1, 1]-R04)**2)**0.5])
+    for i in range(1, nstations):
+        if i==nstations-1:
+            r_s[-1, :] = np.array([r_hub[-1],r_tip[-1]])
+            x_s[-1, :] = np.array([x_hub[-1],x_tip[-1]])
+        else:
+            r_s[i, :] = r_s[i-1, :]+gap[i-1]
+            x_s[i, :] = np.array([X01 + (R**2-(r_s[i, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
+                      (r_s[i, 1]-R04)**2)**0.5])
 
     #-----------------------------Stator-------------------------------------------
-    r_s[2, :] = r_s[1, :]+gap_rs
-    x_s[2, :] = np.array([X01 + (R**2-(r_s[2, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
-                      (r_s[2, 1]-R04)**2)**0.5])
+#            r_s[2, :] = r_s[1, :]+gap
+#            x_s[2, :] = np.array([X01 + (R**2-(r_s[2, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
+#                      (r_s[2, 1]-R04)**2)**0.5])
+#
+#            r_s[3, :] = r_s[2, :]+s1_len
+#            x_s[3, :] = np.array([X01 + (R**2-(r_s[3, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
+#                      (r_s[3, 1]-R04)**2)**0.5])
+#
+#    #--------------------------------Rotor 2---------------------------------------
+#            r_s[4, :] = r_s[3, :]+gap
+#            x_s[4, :] = np.array([X01 + (R**2-(r_s[4, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
+#                      (r_s[4, 1]-R04)**2)**0.5])
 
-    r_s[3, :] = r_s[2, :]+s1_len
-    x_s[3, :] = np.array([X01 + (R**2-(r_s[3, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
-                      (r_s[3, 1]-R04)**2)**0.5])
-
-    #--------------------------------Rotor 2---------------------------------------
-    r_s[4, :] = r_s[3, :]+gap_sr
-    x_s[4, :] = np.array([X01 + (R**2-(r_s[4, 0]-R01)**2)**0.5,X04 + (ae/be)*(be**2-
-                      (r_s[4, 1]-R04)**2)**0.5])
-    r_s[5, :] = np.array([r_hub[-1],r_tip[-1]])
-    x_s[5, :] = np.array([x_hub[-1],x_tip[-1]])
     #------------------------------------------------------------------------------
     #----------------Area calculation at inlet and oultlet-------------------------
     for i in range(nstations):
