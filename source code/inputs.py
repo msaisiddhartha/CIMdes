@@ -1,34 +1,35 @@
 import numpy as np
 
 #----------------------------Input Parameters--------------------------------
-casename    = "multistage"
-N           = 22363                               #Speed of Impeller [rpm]
-P01         = 101325                            #Inlet Pressure [Pa]
-T01         = 300                               #Inlet Temperature [K]
-Vt1         = 0                                 #Inlet Tangentail Velocity[m^2/s]
-mdot        = 4                                #Mass flow rate [kg/s]
-delTT       = 176.46                           #Ovearll Temperature rise [K]
-Rgas        = 287                              #Gas constant of Air [J/kg-K]
-Cp          = 1006                               #Specific constant at constant pressure [J/kg-K]
-Z           = [24,24,24]                          #Number of Blades starting with rotor [-]
-nsect       = 5                               #Number of streamlines
-Beta1_Blade = np.array([-36,-62])       #Inlet relative flow angle[deg]
+casename        = "multistage"
+N               = 22363                         #Speed of Impeller [rpm]
+P01             = 101325                        #Inlet Pressure [Pa]
+T01             = 300                           #Inlet Temperature [K]
+Vt1             = 0                             #Inlet Tangentail Velocity[m^2/s]
+mdot            = 4                             #Mass flow rate [kg/s]
+delTT           = 176.46                        #Ovearll Temperature rise [K]
+Rgas            = 287                           #Gas constant of Air [J/kg-K]
+Cp              = 1006                          #Specific constant at constant pressure [J/kg-K]
+Z               = [24,24,24]                    #Number of Blades starting with rotor [-]
+nsect           = 5                             #Number of streamlines
+Beta1_Blade     = np.array([-36,-62])           #Inlet relative flow angle[deg]
+nu              = 1.8e-6                        #Kinematic viscosity of fluid
 
 #-----------------------------Stage Parameters---------------------------------
-WorkRatio       = np.array([0.25, 0.75])                     #Ratio of work done by Rotor 1]
-dalpha          = np.array([25])                            #Stator turning angle [deg]
-Y               = 0.03                                #Total Pressure loss coefficient across stator [-]
-Bckswp          = -45                       #Backsweep angle [deg]
-nu              = 1.8e-6
-cl              = [0.005, 0.004, 0.003]             #Average Tip clearance
+WorkRatio       = np.array([0.35, 0.65])        #Ratio of work done per stage (Total = 1)
+dalpha          = np.array([25])                #Stator turning angle [deg]
+Y               = 0.03                          #Total Pressure loss coefficient across stator [-]
+Bckswp          = -45                           #Backsweep angle [deg]
+cl              = [0.0005, 0.0004, 0.0003]         #Average Tip clearance per blade row
+
 #-----------------------------Flowpath Parameters------------------------------
 R_hub_le        = 0.0449341
 R_tip_le        = 0.11274362
 R_hub_te        = 0.2
 R_tip_te        = 0.2
 
-[X01, R01]      = [-0.065005893244729426, 0.21920467299175289]     #(x,r)-coordinates for center of circle for hub
-R               = 0.186                         #Radius of the circle
+[X01, R01]      = [-0.065005893244729426, 0.21920467299175289]      #(x,r)-coordinates for center of circle for hub
+R               = 0.186                                             #Radius of the circle
 
 [X04,R04]       = [0,0.209]            #(x,r)-coordinates for center of ellipse for shroud
 [ae,be]         = [0.105761,R04-R_tip_le]
@@ -37,7 +38,7 @@ R_DiffuserExit  = 0.3
 
 #------------------------------Tblade3 Input-----------------------------------
 airfoiltype     = 'sect1'
-ang             = [0,0,2]
+ang             = [0,0,2]                   #Row type (0-axial; 1-radial; 2-mixed)
 chrdr_nd        = 1.165
 gap_rs          = [0.0025,0.00125]
 s1_len          = [0.04,0.02]

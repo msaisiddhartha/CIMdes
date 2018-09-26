@@ -2,27 +2,28 @@
 import pylab as py
 from matplotlib.pyplot import *
 import numpy as np
-import subprocess
-import timeit
-import os
+import subprocess, timeit, os
+import pandas as pd
+from tabulate import tabulate
 
 from inputs import *
 from design import *
 from loss import *
 from functions import *
-
-
 from analysis_plots import *
+
 np.seterr(divide='ignore', invalid='ignore')
 
 start = timeit.default_timer()
 
+
 workdir = os.getcwd()
 
-rm, area, r_s, bsf, xsl, rsl, bw, gamma, phi_angle = streamlines()
+rm, area, r_s, bsf, xsl, rsl, bw, gamma = streamlines()
 
-
-
+stagenum = 1
+rownum=0
+Eta=np.ones((nrows+1,1))
 
 # Evaluating based on known parameters
 w = 2 * np.pi * N / 60  # Angular velocity[rad/s]
@@ -56,16 +57,13 @@ Vr_s[:,0] = Vr[0]
 Vz_s[:,0] = Vz[0]
 Vm_s[:,0] = Vm[0]
 
-stagenum = 1
-rownum=0
-Eta=np.ones((nrows+1,1))
 
 keyword = "chord_actual(mm):"
 #Calcualtions from rotor-1 exit onwards
 for i in range(0, nstations-1):
 
     error = 5
-    #Detect rotor exit
+    #----------------------------Detect rotor exit------------------------------
     if i%4==0:
         #Along meanline
         T0[i+1] = T0[i] + delTT_row[i//4]
@@ -96,59 +94,77 @@ for i in range(0, nstations-1):
                 axial = False
 
             row_name = "R"
+            beta_in, beta_out = angle_def(rownum, betaz_s, betar_s, betam_s)
 
             #Create t-blade3 and calculate properties
-            if ang[rownum] == 0:
+            f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, beta_in, beta_out, Mrel_s, x_s, r_s, span ,xsl, rsl)
 
-                f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, betaz_s, betaz_s, Mrel_s, x_s, r_s, span ,xsl, rsl)
-            elif ang[rownum] == 1:
-
-                f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, betar_s, betar_s, Mrel_s, x_s, r_s, span ,xsl, rsl)
-            elif ang[rownum] == 2:
-
-                f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, betaz_s, betar_s, Mrel_s, x_s, r_s, span ,xsl, rsl)
             flog = open('output_' + row_name + str(stagenum) + '.txt', 'r')
 
-
+            #Flow properties calculation
             chord[:,rownum] = chord_lookup(flog, row_name, stagenum, keyword)
             pitch[rownum] = 2 * np.pi * rm[i + 1] / Z[rownum]
             sol[rownum] = chord[mean_num, rownum] / pitch[rownum]
             phi[rownum] = FlowCoeff(Vm[i+1], U[i+1])
-
-            #losses calculation
             DH[rownum] = dehaller(W[i+1], W[i])
             Re = Recalc(chord[mean_num, rownum], rho[i], W[i])
             Df[rownum] = DiffusionFact(Cp, sw[rownum], DH[rownum], Wt[i+1], Wt[i], W[i], sol[rownum], W[i+1], rm[i], W_s[-1, i], U[i], T0[i+1], T0[i],  r_s[i, -1], axial)
+
+            #losses calculation
             dH_Loss[0, rownum] = IncLoss(Vm[i], Wt[i], betam[i])
-            dH_Loss[1,rownum] = SkinFricLoss(W[i+1], W[i], r_s[i,0], r_s[i,1], betam[i], Z[rownum], Re, chord[mean_num, rownum])
+            dH_Loss[1,rownum] = SkinFricLoss(W[i+1], W_s[0,i], W_s[-1, i], r_s[i,0], r_s[i,1], rm[i], betam_s[0, i], betam_s[-1, i], betam[i], Z[rownum], Re, chord[mean_num, rownum], bw[i+1])
             dH_Loss[4,rownum] = RecirculationLoss(betam[i+1], Df[rownum], U[i+1])
             dH_Loss[2,rownum] = BladeLoadLoss(Df[rownum], U[i+1])
-            dH_Loss[3,rownum] = ClearanceLoss(r_s[i,0], r_s[i,1], rm[i+1], cl[rownum], bw[i+1], U[i+1])
+            dH_Loss[3,rownum] = ClearanceLoss(r_s[i,0], r_s[i,1], rm[i+1],  rho[i], rho[i+1], cl[rownum], bw[i+1], Z[rownum], Vt[i+1], Vm[i], U[i+1])
             dH_Loss[5,rownum] = np.fabs(LeakageLoss(bw[i+1], bw[i], rm[i+1], rm[i], Vt[i+1], Vt[i], Z[rownum], cl[rownum], rho[i+1], U[i+1], chord[mean_num, rownum]))
-            dH_Loss[6,rownum] = DiskFricLoss(U[i+1], rm[i+1], rho[i+1], rho[i], Re)
+            dH_Loss[6,rownum] = DiskFricLoss(U[i+1], rm[i+1], rho[i+1], rho[i])
             dH[0,rownum] = Cp*(T0[i+1] - T0[i])
             TR[rownum] = T0[i+1]/T0[i]
-
             dH[1,rownum] = np.sum(dH_Loss[0:4,rownum], axis =0)   #Entalpy loss due to internal losses for each blade row
             dH[2,rownum] = np.sum(dH_Loss[4:7,rownum], axis =0)   #Entalpy loss due to external losses for each blade row
+
+            #Efficiency iteration
             Etap = (dH[0,rownum]-dH[1,rownum])/(dH[0,rownum]+dH[2,rownum])
             error = np.fabs((1-Etap/Eta[rownum])*100)
             print("iter = "+ str(cntr) + "\t" + "Efficiency error = " + str(error))
             Eta[rownum] = Etap
             cntr+=1
-        print()
-        #Slip Factor
-        if stagenum == 2:
-            stagger  = stagger_def(stagenum, mean_num, Bckswp)
-            thk_max  = thk_lookup(stagenum, mean_num) * chord[mean_num, rownum]
-            dbetadm = (Bckswp-betam[i])/(chord[mean_num, rownum] * np.cos(np.radians(stagger)))
-            slip_model, shape_factor, slip_rad, slip_turn, slip_pass = SlipFactor(Bckswp, gamma[i+1], Z[rownum], pitch[rownum], phi[rownum], dbetadm, rho[i+1], bw[i+1], thk_max)
-            Vslip = U[i+1]*(1+phi[rownum]*np.tan(np.radians(Bckswp))) - Vt[i+1]
 
-            slip_calc = 1-Vslip/U[i+1]
+        print()
+
+        a0 = (g*Rgas*T0[i])**0.5
+        rho0 = P0[i]/(Rgas*T0[i])
+        thk_max  = thk_lookup(stagenum, mean_num) * chord[mean_num, rownum]
+        stagger  = stagger_def(stagenum, mean_num, Bckswp)
+
+        #Check for choking
+        choked, Ath, Ast = choke(mdot, rho0, a0, g, U[i], r_s[i,1], r_s[i,0], beta_in[mean_num,i], 0, thk_max, Z[rownum])
+        if choked:
+            print("Rotor "+str(rownum)+" is choked")
+            print("Throat area = " + "%.8f"%float(Ath) + " Flow area = " + "%.8f"%float(Ast) + '\n')
+            print("Removing choke flow........"+ '\n')
+            inc_max = 8
+            inc = np.linspace(0,inc_max,101)
+            l=0
+            while choked:
+                choked, Ath, Ast = choke(mdot, rho0, a0, g, U[i], r_s[i,1], r_s[i,0], beta_in[mean_num,i], inc[l], thk_max, Z[rownum])
+
+                l+=1
+            print("Successfully choking is removed by incidence angle adjustment")
+            print("Incidence angle at which ch = "+ str(-inc[l]))
+            #choked, Ath, Ast = choke(mdot, rho0, a0, g, U[i], r_s[i,1], r_s[i,0], betam[i], 0, thk_max, Z[rownum])
+        else:
+            print("Rotor "+str(rownum)+" is not choked")
+            print("Throat area = " + str(Ath) + " Flow area = " + str(Ast)+ '\n')
+
+#Slip Factor
+        dbetadm = (betam[i+1]-betam[i])/(chord[mean_num, rownum] * np.cos(np.radians(stagger)))
+        slip_model, shape_factor, slip_rad, slip_turn, slip_pass = SlipFactor(betam[i], gamma[i+1], Z[rownum], pitch[rownum], phi[rownum], dbetadm, rho[i+1], bw[i+1], thk_max/1000)
+        Vslip = U[i+1]*(1+phi[rownum]*np.tan(np.radians(Bckswp))) - Vt[i+1]
+        slip_calc = 1-Vslip/U[i+1]
         rownum+=1
 
-    #Check for R-S interface and keep properties constant along interface
+#----------------Check for R-S interface and calculated at inlets---------------
     if i%4 == 1 or i%4 ==3:
         T0[i+1] = T0[i]
         P0[i+1] = P0[i]
@@ -173,11 +189,11 @@ for i in range(0, nstations-1):
         betar_s = np.degrees(np.arctan(Wt_s / Vr_s))
         alphar_s = np.degrees(np.arctan(Vt_s / Vr_s))
 
-    #Check for stator exit and calculate properties
+#---------------------------Check for stator exit-------------------------------
     if i%4 == 2:
         T0[i+1] = T0[i]
-        P0[i+1] = P0[i] - Y * (P0[i] - P0[i])
         alpham[i+1] = alpham[i] - dalpha[i//4]
+        P0[i+1] = P0[i] - Y * (P0[i] - P[i])
         rho0 = P0[i+1] / (Rgas * T0[i+1])
         rho[i+1], Vm[i+1], V[i+1], T[i+1], P[i+1], Vt[i+1] = ThermoPropStator(rho0, area[i+1], alpham[i+1], T0[i+1], P0[i+1], g)
         Wt[i+1] = Vt[i+1] - U[i+1]
@@ -202,39 +218,37 @@ for i in range(0, nstations-1):
 
         row_name = "S"
 
+        alpha_in, alpha_out = angle_def(rownum, alphaz_s, alphar_s, alpham_s)
         #Create t-blade3 and calculate properties
-        if ang[rownum] == 0:
+        f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, alpha_in, alpha_out, M_s, x_s, r_s, span ,xsl, rsl)
 
-            f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, alphaz_s, alphaz_s, M_s, x_s, r_s, span ,xsl, rsl)
-        if ang[rownum] == 1:
-
-            f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, alphar_s, alphar_s, M_s, x_s, r_s, span ,xsl, rsl)
-        if ang[rownum] == 2:
-
-            f = create_tblade3(rownum, i, row_name, stagenum, data, nsect, bsf, alphaz_s, alphar_s, M_s, x_s, r_s, span ,xsl, rsl)
         flog = open('output_' + row_name + str(stagenum) + '.txt', 'r')
+
+#Flow properties calculation
         chord[:,rownum] = chord_lookup(flog, row_name, stagenum, keyword)
         pitch[rownum] = 2 * np.pi * rm[i + 1] / Z[rownum]
         sol[rownum] = chord[mean_num, rownum] / pitch[rownum]
         phi[rownum] = FlowCoeff(Vm[i+1], U[i+1])
-
-        #losses calculation
         DH[rownum] = dehaller(V[i+1], V[i])
         Re = Recalc(chord[mean_num, rownum], rho[i], V[i])
         Df[rownum] = DiffusionFact(Cp, sw[rownum], DH[rownum], Vt[i+1], Vt[i], V[i], sol[rownum], V[i+1], rm[i], V_s[-1, i], U[i], T0[i+1], T0[i],  r_s[i, -1], axial)
+        Rx[rownum] = DegofReac(P[i], P[i-2], P[i-3])
+
+#losses calculation
         dH_Loss[0, rownum] = IncLoss(Vm[i], Wt[i], betam[i])
-        dH_Loss[1,rownum] = SkinFricLoss(V[i+1], V[i], r_s[i,0], r_s[i,1], alpham[i], Z[rownum], Re, chord[mean_num, rownum])
+        dH_Loss[1,rownum] = SkinFricLoss(V[i+1], V_s[0,i], V_s[-1, i], r_s[i,0], r_s[i,1], rm[i], alpham_s[0, i], alpham_s[-1, i], alpham[i], Z[rownum], Re, chord[mean_num, rownum], bw[i+1])
         dH_Loss[4,rownum] = RecirculationLoss(alpham[i+1], Df[rownum], U[i+1])
         dH_Loss[2,rownum] = BladeLoadLoss(Df[rownum], U[i+1])
-        dH_Loss[3,rownum] = ClearanceLoss(r_s[i,0], r_s[i,1], rm[i+1], cl[rownum], bw[i+1], U[i+1])
+        dH_Loss[3,rownum] = ClearanceLoss(r_s[i,0], r_s[i,1], rm[i+1],  rho[i], rho[i+1], cl[rownum], bw[i+1], Z[rownum], Vt[i+1], Vm[i], U[i+1])
         dH_Loss[5,rownum] = np.fabs(LeakageLoss(bw[i+1], bw[i], rm[i+1], rm[i], Vt[i+1], Vt[i], Z[rownum], cl[rownum], rho[i+1], U[i+1], chord[mean_num, rownum]))
-        dH_Loss[6,rownum] = DiskFricLoss(U[i+1], rm[i+1], rho[i+1], rho[i], Re)
+        dH_Loss[6,rownum] = DiskFricLoss(U[i+1], rm[i+1], rho[i+1], rho[i])
 
         rownum+=1
         stagenum+=1
 
     subprocess.call("geomturbo " + f.name + " 241 ")
 
+#subprocess.call("combine_geomturbo.sh")
 
 TR[-1] = T0[-1]/T0[0]
 dH_Loss[:,3] = np.sum(dH_Loss[:,0:3], axis =1)  #Overall enthaly loss
@@ -242,6 +256,9 @@ dH[1,:] = np.sum(dH_Loss[0:4,:], axis =0)   #Entalpy loss due to internal losses
 dH[2,:] = np.sum(dH_Loss[4:7,:], axis =0)   #Entalpy loss due to external losses for each blade row
 
 Eta = (dH[0,:]-dH[1,:])/(dH[0,:]+dH[2,:])       #Efficiency
+for i in range(nrows):
+    if i%2==1:
+        Eta[i]=0
 
 PR = (1+Eta*(TR-1))**(g/(g-1))              #Pressure Ratio
 #------------------------------------------------------------------------------
@@ -253,24 +270,51 @@ PR = (1+Eta*(TR-1))**(g/(g-1))              #Pressure Ratio
 ywall_s = 6 * ((Vm_s / 0.0000157)**(-7 / 8)) * ((0.2)**(1 / 8))   # First cell distance using Blasius solution
 print("Estimate of first cell wall distance =", np.amin(ywall_s))
 
+
+stage_qty = ["Row", "Solidity", "DF", "DeHallerNumber","Rx", "phi","PR", "Efficiency"]
+
 fmean = open("meanlineflowproperties.dat", 'w')
-fmean.write("Row    Solidity    DF    DeHallerNumber      Rx      phi      PR       Efficiency\n")
-for i in range(nrows):
-    fmean.write("%02d" % (i + 1) + "    ")
-    fmean.write("  " + '%2.4f' %
-                sol[i] + '  ' + '%2.4f' % Df[i])
-    fmean.write("    " + "%2.4f" % DH[i])
-    fmean.write("    " + "\t%2.4f" % -Rx[i])
-    fmean.write("    " + "%2.4f" % phi[i])
-    fmean.write("    " + "%2.4f" % PR[i])
-    fmean.write("    " + "%2.4f" % Eta[i])
-    fmean.write('\n')
-fmean.write('\n')
-fmean.write("Station    Swirl   Vt[m/s]    Vm[m/s]    T[k]      Mach\n")
-for i in range(nstns):
-    fmean.write("%02d" % (i + 1) + "  ")
-    fmean.write("  " + '%2.4f' % sw_s[mean_num, i] + '    ' + '%2.4f' % Vt_s[mean_num, i] + '    ' + '%2.4f' %
-                Vm_s[mean_num, i] + '    ' + '%2.4f' % T_s[mean_num, i] + '    ' + '%2.4f' % M_s[mean_num, i] + '\n')
+row_list = [[] for i in range(nrows + 1)]
+for i in range(nrows+1):
+    if i == 0:
+        for j in range(len(stage_qty)):
+            row_list[i].append(stage_qty[j])
+    else:
+        row_list[i].append("%02d" % (i))
+        row_list[i].append("%.4f" % float(sol[i-1]))
+        row_list[i].append("%.4f" % float(Df[i-1]))
+        row_list[i].append("%.4f" % float(DH[i-1]))
+        row_list[i].append("%.4f" % float(Rx[i-1]))
+        row_list[i].append("%.4f" % float(phi[i-1]))
+        row_list[i].append("%.4f" % float(PR[i-1]))
+        row_list[i].append("%.4f" % float(Eta[i-1]))
+
+fmean.write('\n' + tabulate(row_list, headers = "firstrow") + '\n')
+
+station_qty = ["J","Swirl", "Vt[m/s]","Vm[m/s]", "Vz[m/s]",  " Vr[m/s]",  " T[k]",  "Mach" , "Rel.Mach" , "P0[Pa]",  "T0[k]"]
+station_list = [[] for i in range(nstations + 1)]
+for i in range(nstations+1):
+    if i == 0:
+        for j in range(len(station_qty)):
+            station_list[i].append(station_qty[j])
+    else:
+        station_list[i].append("%02d" % (i))
+        station_list[i].append("%.4f" % float(sw[i-1]))
+        station_list[i].append("%.4f" % float(Vt[i-1]))
+        station_list[i].append("%.4f" % float(Vm[i-1]))
+        station_list[i].append("%.4f" % float(Vz[i-1]))
+        station_list[i].append("%.4f" % float(Vr[i-1]))
+        station_list[i].append("%.4f" % float(T[i-1]))
+        station_list[i].append("%.4f" % float(M[i-1]))
+        station_list[i].append("%.4f" % float(Mrel[i-1]))
+        station_list[i].append("%.4f" % float(P0[i-1]))
+        station_list[i].append("%.4f" % float(T0[i-1]))
+fmean.write('\n' + tabulate(station_list, headers = "firstrow") + '\n')
+
+loss_qty_rows = ["Inc. Loss", "Skin Friction Loss", "Blade Loading Loss", "Clearance Loss", "Recirculation Loss", "Leakage Loss", "Disk Friction Loss"]
+loss = pd.DataFrame(data = dH_Loss.T, index = ["R1", "S1", "R2", "Overall"], columns = loss_qty_rows).astype('float')
+fmean.write('\n' + tabulate(loss, headers = loss_qty_rows, numalign="left") + '\n')
+
 fmean.write('\n\n')
 fmean.write("Overall Pressure ratio = %2.4f" % PR[-1] + '\n')
 fmean.write("Overall Efficiency = %2.4f" % Eta[-1] + '\n')

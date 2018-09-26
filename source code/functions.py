@@ -66,6 +66,29 @@ def free_vortex(k, rm1, Vt1, r_span1, Vm1, T1, g, Ur1):
 
     return V_s1[:,k], W_s1[:,k], betam_s1[:,k], alpham_s1[:,k], M_s1[:,k], Mrel_s1[:,k], Wt_s1[:,k], Vt_s1[:,k]
 
+def span_var(k, rm1, Vt1, r_span1, Vm1, T1, g, Ur1):
+    #exponential law
+    Vm_s1[:,k] = Vm1[k]
+    T_s1[:,k] = T1[k]
+    a=100
+    b=40
+    if k%2==0:
+        for j in rage(nsect):
+            Vt_s1[j,k] = a-(b*r_span1[j,k]/rm1[k])
+    else:
+        for j in rage(nsect):
+            Vt_s1[j,k] = a+(b*r_span1[j,k]/rm1[k])
+
+    sw_s1[:,k]      = r_span1[:,k]*Vt_s1[:,k]
+    Wt_s1[:,k]      = Vt_s1[:,k] - Ur1[:,k]
+    betam_s1[:,k]   = np.degrees(np.arctan(Wt_s1[:,k] / Vm_s1[:,k]))
+    alpham_s1[:,k]  = np.degrees(np.arctan(Vt_s1[:,k] / Vm_s1[:,k]))
+    V_s1[:,k]       = (Vt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
+    W_s1[:,k]       = (Wt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
+    a_s1[:,k]       = (g * T_s1[:,k] * Rgas)**0.5
+    M_s1[:,k]       = V_s1[:,k] / a_s1[:,k]
+    Mrel_s1[:,k]    = W_s1[:,k] / a_s1[:,k]
+
 def DegofReac(P2, P1, P0):
     Rx = (P1 - P0) / (P2 - P0)
     return Rx
@@ -112,13 +135,25 @@ def stagger_def(rn, mn, beta0):
 
 def thk_lookup(rn, mn):
     flog = open("blade_Section_data.R" + str(rn) + ".dat", 'r')
-    nskip = 7
+    nskip = 4+ mean_num
     for i in range(nskip):
         datastr = flog.readline()
     datastr = flog.readline()
     datam = datastr.split()
     thk = np.float(datam[11])
     return thk
+
+def angle_def(rn, betaz_s, betar_s, betam_s):
+    if ang[rn] == 0:
+        beta_in_blade = betaz_s
+        beta_out_blade = betaz_s
+    elif ang[rn] == 1:
+        beta_in_blade = betar_s
+        beta_out_blade = betar_s
+    elif ang[rn] == 2:
+        beta_in_blade = betaz_s
+        beta_out_blade = betar_s
+    return beta_in_blade, beta_out_blade
 
 def inc_angle(k):
     IncAngR1LE = np.zeros(nsect)
@@ -219,7 +254,7 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_in, beta_
     f.write(" Variable Radial stacking (0=no,1=yes):" + '\n')
     f.write("    " + ('%01d' % 0) + '\n')
     f.write(
-        " J   type |stk_u |stk_v |umxthk |lethk |tethk  |Jcells(Grid:4n+1) |eta_ofst(<=10){%thkc/Jmax}  |BGgrid(0=no,1=yes) |" + '\n')
+        " J   type |stk_u |stk_v |umxthk |lethk |tethk  |Jcells(Grid:4n+1) |eta_ofst(<=10){thkc/Jmax}  |BGgrid(0=no,1=yes) |" + '\n')
     for i in range(nsect):
         f.write('%02d' % (i + 1) + "   ")
         f.write(str(airfoiltype) + "  ")

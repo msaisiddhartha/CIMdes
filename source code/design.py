@@ -106,4 +106,4 @@ def streamlines():
     for j in range(len(x_hub_nd)):
         xsl[:, j] = np.linspace(x_hub_nd[j], x_tip_nd[j], nsect)
         rsl[:, j] = np.linspace(r_hub_nd[j], r_tip_nd[j], nsect)
-    return rm, area, r_s, bsf, xsl, rsl, bw, gamma, phi
+    return rm, area, r_s, bsf, xsl, rsl, bw, gamma
