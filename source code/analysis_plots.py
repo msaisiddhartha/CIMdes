@@ -65,22 +65,33 @@ def plots(xsl, rsl, Vm, Vt, W, Wt, alpha, beta, span, nstns, bsf, r_id):
     for j in vel_tri.keys():
         fig = py.figure(fignum, figsize=(15, 10))
         texts= []
-        for i in range(nstns):
-            ax = fig.add_subplot(nrows//2+1,2,i+1)
-            soa = np.array([[0,0,Vm[j][i],0],[0,0,Vm[j][i],Vt[j][i]],[Vm[j][i],0,0,
+        cnt = 0
+        for i in range(nstations):
+            ax = fig.add_subplot(nrows,2,i+1)
+            if i%4==0 or i%4==1:
+                soa = np.array([[0,0,Vm[j][i],0],[0,0,Vm[j][i],Vt[j][i]],[Vm[j][i],0,0,
                              Vt[j][i]],[0,0,Vm[j][i],Wt[j][i]],[Vm[j][i],0,0,Wt[j][i]]])
-            X, Y, U, V = zip(*soa)
-            ax = py.gca()
-            ax.set_xlim([-10, max(Vm[:,i])+10])
-            ax.set_ylim([max(Vt[:,i])+10, min(Wt[:,i])-10])
-            if Wt[j][i]<0:
-                ax.text(25,-30,r'$\beta$ = %.2f$\degree$'%(beta[j][i]), size=16)
-                ax.text(25,10,r'$\alpha$ = %.2f$\degree$'%(alpha[j][i]), size=16)
+                X, Y, U, V = zip(*soa)
+                ax = py.gca()
+                ax.set_xlim([-10, max(Vm[:,i])+10])
+                ax.set_ylim([max(Vt[:,i])+10, min(Wt[:,i])-10])
+                if Wt[j][i]<0:
+                    ax.text(25,-30,r'$\beta$ = %.2f$\degree$'%(beta[j][i]), size=16)
+                    ax.text(25,10,r'$\alpha$ = %.2f$\degree$'%(alpha[j][i]), size=16)
+                else:
+                    ax.text(25,10,r'$\beta$ = %.2f$\degree$'%(beta[j][i]), size=16)
+                    ax.text(25,75,r'$\alpha$ = %.2f$\degree$'%(alpha[j][i]), size=16)
+                ax.invert_yaxis()
             else:
-                ax.text(25,10,r'$\beta$ = %.2f$\degree$'%(beta[j][i]), size=16)
-                ax.text(25,75,r'$\alpha$ = %.2f$\degree$'%(alpha[j][i]), size=16)
-            ax.invert_yaxis()
-            ax.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=1)
+                soa = np.array([[0,0,Vm[j][i],0],[0,0,Vm[j][i],Vt[j][i]],[Vm[j][i],0,0,
+                             Vt[j][i]]])
+                X, Y, U, V = zip(*soa)
+                ax = py.gca()
+                ax.set_xlim([-10, max(Vm[:,i])+10])
+                ax.set_ylim([-10, max(Vt[:,i])+10])
+                ax.text(25,10,r'$\alpha$ = %.2f$\degree$'%(alpha[j][i]), size=16)
+
+            ax.quiver(X, Y, U, V, label=['Vm', 'V', 'Wt', 'Vt', 'W'], color = ['b', 'c', 'm', 'y', 'k'], angles='xy', scale_units='xy', scale=1)
             ax.set_title("Station "+str(i+1))
         py.tight_layout()
         py.savefig(os.path.join(plotdir, "veltri_" + vel_tri[j] + ".png"))
