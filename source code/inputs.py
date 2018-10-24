@@ -1,26 +1,26 @@
 import numpy as np
+import sys
 
 #----------------------------Input Parameters--------------------------------
-casename = "multistage"
-N = 22363  # Speed of Impeller [rpm]
-P01 = 101325  # Inlet Pressure [Pa]
-T01 = 300  # Inlet Temperature [K]
-Vt1 = 0  # Inlet Tangentail Velocity[m^2/s]
-mdot = 4  # Mass flow rate [kg/s]
-delTT = 176.46  # Ovearll Temperature rise [K]
-Rgas = 287  # Gas constant of Air [J/kg-K]
-Cp = 1006  # Specific constant at constant pressure [J/kg-K]
-Z = [24, 24, 24]  # Number of Blades starting with rotor [-]
-nsect = 5  # Number of streamlines
-Beta1_Blade = np.array([-36, -62])  # Inlet relative flow angle[deg]
-nu = 1.8e-6  # Kinematic viscosity of fluid
+casename    = "multistage"
+N           = 22363             # Speed of Impeller [rpm]
+P01         = 101325            # Inlet Pressure [Pa]
+T01         = 300               # Inlet Temperature [K]
+Vt1         = 0                 # Inlet Tangentail Velocity[m^2/s]
+mdot        = 4                 # Mass flow rate [kg/s]
+delTT       = 176.46            # Ovearll Temperature rise [K]
+Rgas        = 287               # Gas constant of Air [J/kg-K]
+Cp          = 1006              # Specific constant at constant pressure [J/kg-K]
+Z           = [24]              # Number of Blades starting with rotor [-]
+nsect       = 5                 # Number of streamlines
+nu          = 1.8e-6            # Kinematic viscosity of fluid
 
 #-----------------------------Stage Parameters---------------------------------
-WorkRatio = np.array([0.35, 0.65])  # Ratio of work done per stage (Total = 1)
-dalpha = np.array([25])  # Stator turning angle [deg]
-Y = 0.03  # Total Pressure loss coefficient across stator [-]
-Bckswp = -45  # Backsweep angle [deg]
-cl = [0.0005, 0.0004, 0.0003]  # Average Tip clearance per blade row
+WorkRatio   = np.array([1])     # Ratio of work done per stage (Total = 1)
+dalpha      = np.array([25])    # Stator turning angle [deg]
+Y           = 0.03              # Total Pressure loss coefficient across stator [-]
+Bckswp      = -45               # Backsweep angle [deg]
+cl          = [0.0005]          # Average Tip clearance per blade row
 
 #-----------------------------Flowpath Parameters------------------------------
 R_hub_le = 0.0449341
@@ -32,10 +32,10 @@ R_tip_te = 0.2
 [X01, R01] = [-0.065005893244729426, 0.21920467299175289]
 R = 0.186  # Radius of the circle
 
-[X04, R04] = [0, 0.209]  # (x,r)-coordinates for center of ellipse for shroud
-[ae, be] = [0.105761, R04 - R_tip_le]
+[X04,R04]       = [0,0.209]            #(x,r)-coordinates for center of ellipse for shroud
+[ae,be]         = [0.105761,R04-R_tip_le]
 
-R_DiffuserExit = 0.3
+R_DiffuserExit  = 0.3
 
 #------------------------------Tblade3 Input-----------------------------------
 airfoiltype = 'sect1'
@@ -47,57 +47,58 @@ gap = [[0.0300659, 0.007256379999999993], [
 #===============================================================================
 #------------------------Variable Declaration I---------------------------------
 #===============================================================================
-nrows = len(Z)  # Number of blade rows
+nrows = len(Z)                          #Number of blade rows
 case = 'mr'
-nstns = nrows + 1  # Number of stations
-nstations = nrows * 2
+nstns = nrows+1                         #Number of stations
+nstations = nrows*2
 
-xm = np.zeros((nstations, 1))
-rm = np.zeros((nstations, 1))
-x_s = np.zeros((nstations, 2))
-r_s = np.zeros((nstations, 2))
+xm   = np.zeros((nstations,1))
+rm   = np.zeros((nstations,1))
+x_s = np.zeros((nstations,2))
+r_s = np.zeros((nstations,2))
 
 
-# Scalar properties dor 1D
-U = np.zeros((nstations, 1))
-V = np.zeros((nstations, 1))
-Vm = np.zeros((nstations, 1))
-Vt = np.zeros((nstations, 1))
-Vz = np.zeros((nstations, 1))
-Vr = np.zeros((nstations, 1))
-W = np.zeros((nstations, 1))
-Wt = np.zeros((nstations, 1))
-Wm = np.zeros((nstations, 1))
+#Scalar properties dor 1D
+U   = np.zeros((nstations,1))
+V   = np.zeros((nstations,1))
+Vm  = np.zeros((nstations,1))
+Vt  = np.zeros((nstations,1))
+Vz  = np.zeros((nstations,1))
+Vr  = np.zeros((nstations,1))
+W   = np.zeros((nstations,1))
+Wt  = np.zeros((nstations,1))
+Wm  = np.zeros((nstations,1))
 
-# Intensive properties
-T = np.zeros((nstations, 1))
-T0 = np.zeros((nstations, 1))
-P = np.zeros((nstations, 1))
-P0 = np.zeros((nstations, 1))
-alpham = np.zeros((nstations, 1))
-betam = np.zeros((nstations, 1))
-alphaz = np.zeros((nstations, 1))
-betaz = np.zeros((nstations, 1))
-M = np.zeros((nstations, 1))
-Mrel = np.zeros((nstations, 1))
-T0rel = np.zeros((nstations, 1))
-P0rel = np.zeros((nstations, 1))
-rho = np.zeros((nstations, 1))
-sw = np.zeros((nstations, 1))
-a = np.zeros((nstations, 1))
-area = np.zeros((nstations, 1))
+#Intensive properties
+T       = np.zeros((nstations,1))
+T0      = np.zeros((nstations,1))
+P       = np.zeros((nstations,1))
+P0      = np.zeros((nstations,1))
+alpham   = np.zeros((nstations,1))
+betam    = np.zeros((nstations,1))
+alphaz   = np.zeros((nstations,1))
+betaz    = np.zeros((nstations,1))
+M       = np.zeros((nstations,1))
+Mrel    = np.zeros((nstations,1))
+T0rel   = np.zeros((nstations,1))
+P0rel   = np.zeros((nstations,1))
+rho     = np.zeros((nstations,1))
+sw      = np.zeros((nstations,1))
+a       = np.zeros((nstations,1))
+area    = np.zeros((nstations,1))
 
 
 #===============================================================================
 #------------------------Variable Declaration II--------------------------------
 #===============================================================================
-# Along meanline
+#Along meanline
 sol = np.zeros(nrows)
 pitch = np.zeros(nrows)
 Rx = np.zeros(nrows)
 phi = np.zeros(nrows)
-DH = np.zeros(nrows)  # DeHaller Number
-Df = np.zeros(nrows)  # Diffusion Factor
+DH = np.zeros(nrows)                #DeHaller Number
+Df = np.zeros(nrows)              #Diffusion Factor
+Cf = np.zeros(nrows)
 
 # Enthalpy loss for 7 indiviudal losses row-wise and overall
 dH_Loss = np.zeros((7, nrows + 1))
@@ -105,7 +106,7 @@ dH_Loss = np.zeros((7, nrows + 1))
 dH = np.zeros((3, nrows + 1))
 TR = np.zeros(nrows + 1)
 
-# Along span and diffrent Sections (_s represents along span)
+#Along span and diffrent Sections (_s represents along span)
 chord = np.zeros((nsect, nrows))
 Vt_s = np.zeros((nsect, nstations))
 Wt_s = np.zeros((nsect, nstations))

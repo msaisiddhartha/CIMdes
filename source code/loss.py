@@ -6,7 +6,7 @@ import math
 # Suffix nomenclature: 0-inlet/LE; 1-exit/TE
 
 
-def SlipFactor(beta_b1, gamma1, Z, s, phi1, dBetadm1, rho1, blade_width1, thk):
+def SlipFactor(beta_b1, gamma1, Z, s, phi1, dBetadm1, rho1, blade_width1, thk): #Qiu
     F = 1 - 2 * np.sin(np.pi / Z) * np.sin((np.pi / Z) +
                                            np.radians(-beta_b1)) * np.cos(np.radians(-beta_b1)) * np.sin(np.radians(gamma1)) - thk / (s * np.cos(np.radians(beta_b1)))  # Shape FActor
     dSlip_rad = F * np.pi * \
@@ -42,9 +42,8 @@ def BladeLoadLoss(Df, U):  # Coppage
     return dH_bld
 
 
-def SkinFricLoss(W1, W_h0, W_t0, r_h0, r_t0, r1, beta_h0, beta_t0, beta1, Z, Re, Lb, bw1):  # Jansen
-    W_avg = (2 * W1 + W_h0 + W_t0) / 4
-    cf = 0.027 / Re**(1 / 7)
+def SkinFricLoss(W1, W_h0, W_t0, r_h0, r_t0, r1, beta_h0, beta_t0, beta1, Z, Lb, bw1):  # Jansen
+    W_avg = (2 * W1 + W_h0 - W_t0) / 4
     r_hub_rat = r_h0 / r_t0
     d_hyd_rat = np.cos(np.radians(beta1)) / ((Z / np.pi) + (2 * r1 * np.cos(np.radians(beta1)) / bw1)) + \
         (0.5 * ((r_h0 + r_t0) / r1) * 0.5 *
@@ -52,10 +51,12 @@ def SkinFricLoss(W1, W_h0, W_t0, r_h0, r_t0, r1, beta_h0, beta_t0, beta1, Z, Re,
     d_hyd = d_hyd_rat * 2 * r1
     #p = Z / (np.pi * np.cos(np.radians(betaf)))
     Lz = x_s[-1, 0] - x_s[0, 0]
-    Lb = (np.pi / 2) * (2 * r1 - (r_h0 + r_t0) - bw1 + (2 * Lz)) * (1 /
+    Lb = (np.pi / 4) * (2 * r1 - (r_h0 + r_t0) - bw1 + (2 * Lz)) * (1 /
                                                                     (np.cos(np.radians(beta_h0)) + np.cos(np.radians(beta_t0)) + np.cos(np.radians(beta1))))
+    Re = d_hyd*W_avg/nu
+    cf = 0.0412 * Re**(-0.1925)
     dH_sf = 2 * cf * Lb * W_avg**2 / d_hyd
-    return dH_sf
+    return dH_sf, cf
 
 
 def DiskFricLoss(U1, rmean1, rho1, rho0):  # Daily and Nece

@@ -15,7 +15,6 @@ def ThermoPropRotor(rho0, area, Vt, T0, P0, g):
         rho2p = Ps / (Rgas * Ts)
         error = (1 - rho2p / density) * 100
         density = rho2p
-        #print(density)
     return density, Vmerid, Vabs, Ts, Ps
 
 def ThermoPropStator(rho0, area, alpha_out, T0, P0, g):
@@ -168,13 +167,14 @@ def inc_angle(k):
 
 def DiffusionFact(Cp, sw, DH, Wt1, Wt0, W0, sol, W1, rmean, W_tip0, U1, T01, T00, rtip, axial):
     if axial:
-        Df = 1 - DH + (Wt1 - Wt0) / (2 * sol * W0)
+        Df = 1 - DH + np.fabs(Wt1 - Wt0) / (2 * sol * W0)
     if not axial:
         Wratio = W1 / W_tip0
         num = 0.75 * Cp * (T01 - T00) / U1**2
         rad_ratio = rtip / rmean
         Df = 1 - Wratio + (Wratio * num) / \
-            (sol * (1 - rad_ratio) + 2 * rad_ratio)
+            ((Z[0]/np.pi) * (1 - rad_ratio) + 2 * rad_ratio)
+        print(Wratio)
     return Df
 
 

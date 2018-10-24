@@ -24,11 +24,13 @@ if plot:
 def plots(xsl, rsl, Vm, Vt, W, Wt, alpha, beta, span, nstns, bsf, r_id):
     print()
     print()
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    print("-------------------------------------------------------------------")
     print()
     print("Generating Plots...")
     print()
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    print("-------------------------------------------------------------------")
+    print()
+    print()
     fignum = 1
     sz=15
     py.figure(fignum, figsize=(16,9))

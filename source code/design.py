@@ -13,7 +13,7 @@ gamma = np.zeros(nstations)
 #Generating streamlines at hub nad tip using the krain single-stage compressor
 #==============================================================================
 #Hub
-def streamlines(nst):
+def streamlines():
     r_hub = np.linspace(R_hub_le,R_hub_te,npts)
     x_hub =  X01 + (R**2-(r_hub-R01)**2)**0.5
     #Casing
