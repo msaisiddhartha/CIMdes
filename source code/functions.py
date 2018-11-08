@@ -1,7 +1,8 @@
 import numpy as np
-import subprocess, os, errno
+import subprocess, os, errno, math
 from  inputs import *
 from design import *
+from scipy.optimize import fsolve
 
 
 def ThermoPropRotor(rho0, area, Vt, T0, P0, g):
@@ -31,6 +32,13 @@ def ThermoPropStator(rho0, area, alpha_out, T0, P0, g):
         density = rho2p
 
     return density, Vmerid, Vabs, Ts, Ps, Vtang
+
+def Diffuser(P0, T0, g, area):
+    M = fsolve(mach, [0.1])
+
+def mach(p):
+    m = p
+
 
 def Properties_add(g, T1, Vm1, Wt1, V1, W1, P1, rho1, Vt1, phi_angle1,Vz1):
     a1      = (g * Rgas * T1)**0.5
@@ -205,13 +213,13 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_in, beta_
     f.write(" Blade row #:" + '\n')
     f.write("    " + str(k + 1) + '\n')
     f.write(" Number of blades in this row:" + '\n')
-    f.write("    " + str(Z[k]) + '\n')
+    f.write("    " + str("%d" %Z[k]) + '\n')
     f.write(" Blade Scaling factor (mm):" + '\n')
     f.write("    " + str(bsf * 1000) + '\n')
     f.write(" Number of streamlines:" + '\n')
     f.write("    " + str(nsect) + '\n')
     f.write(" Angles in the input file (0=Beta_z (default),1=Beta_r):" + '\n')
-    f.write("    " + str(ang[k]) + " inci_dev_spline" + '\n')
+    f.write("    " + str("%1d" %ang[k]) + " inci_dev_spline" + '\n')
     f.write(" Airfoil camber defined by curvature control (0=no,1=yes):" + '\n')
     f.write("    " + str(1) + '\t'+ 'spanwise_spline' +  '\n')
     f.write(" Airfoil Thickness distribution (0=Wennerstrom,1=Spline):" + '\n')

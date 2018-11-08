@@ -1,6 +1,5 @@
 """Multi-rotor compressor. All units are in SI system."""
 import pylab as py
-from matplotlib.pyplot import *
 import numpy as np
 import subprocess, timeit, os
 import pandas as pd
@@ -10,7 +9,7 @@ from inputs import *
 from design import *
 from loss import *
 from functions import *
-from analysis_plots import *
+#from analysis_plots import *
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -18,6 +17,7 @@ start = timeit.default_timer()
 
 
 workdir = os.getcwd()
+
 
 rm, area, r_s, bsf, xsl, rsl, bw, gamma = streamlines()
 
@@ -131,7 +131,7 @@ for i in range(0, nstations-1):
             print("iter = "+ str(cntr) + "\t" + "Efficiency error = " + str(error))
             Eta[rownum] = Etap
             cntr+=1
-            
+
 
         print()
 
@@ -284,7 +284,7 @@ print("Estimate of first cell wall distance =", np.amin(ywall_s))
 
 stage_qty = ["Row", "Solidity", "DF", "Cf", "DeHallerNumber","Rx", "phi","PR", "Efficiency"]
 
-fmean = open("meanlineflowproperties_" + str(WorkRatio[0])+ ".dat", 'w')
+fmean = open("meanlineflowproperties.dat", 'w')
 row_list = [[] for i in range(nrows + 1)]
 for i in range(nrows+1):
     if i == 0:
@@ -303,7 +303,7 @@ for i in range(nrows+1):
 
 fmean.write('\n' + tabulate(row_list, headers = "firstrow") + '\n')
 
-station_qty = ["J","Swirl", "Vt[m/s]","Vm[m/s]", "Vz[m/s]",  " Vr[m/s]",  " T[k]",  "Mach" , "Rel.Mach" , "P0[Pa]",  "T0[k]"]
+station_qty = ["J","Swirl", "Vt[m/s]","Vm[m/s]", "Vz[m/s]",  " Vr[m/s]",  " V[m/s]",  " W[m/s]",  " T[k]",  "Mach" , "Rel.Mach" , "P0[Pa]",  "T0[k]"]
 station_list = [[] for i in range(nstations + 1)]
 for i in range(nstations+1):
     if i == 0:
@@ -316,6 +316,8 @@ for i in range(nstations+1):
         station_list[i].append("%.4f" % float(Vm[i-1]))
         station_list[i].append("%.4f" % float(Vz[i-1]))
         station_list[i].append("%.4f" % float(Vr[i-1]))
+        station_list[i].append("%.4f" % float(V[i-1]))
+        station_list[i].append("%.4f" % float(W[i-1]))
         station_list[i].append("%.4f" % float(T[i-1]))
         station_list[i].append("%.4f" % float(M[i-1]))
         station_list[i].append("%.4f" % float(Mrel[i-1]))
@@ -335,7 +337,6 @@ fmean.write("R2 Slip Factor = %.4f" % slip_model + "\n")
 fmean.write("R2 Shape Factor = %.4f" % shape_factor + "\n")
 fmean.write('\n')
 fmean.close()
-
 
 plots(xsl, rsl, Vm_s, Vt_s, W_s, Wt_s, alpham_s, betam_s, span, nstns, bsf, rowindex)
 
