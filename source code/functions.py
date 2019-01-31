@@ -1,31 +1,35 @@
 import numpy as np
-import subprocess, os, errno, math
-from  inputs import *
+import subprocess
+import os
+import errno
+import math
+from inputs import *
 from design import *
 from scipy.optimize import fsolve
 
 
-def ThermoPropRotor(rho0, area, Vt, T0, P0, g):
+def ThermoPropRotor(rho0, mach, area, Vt, T0, P0, g):
     density = rho0
     error = 5
     while abs(error) > 1e-6:
         Vmerid = mdot / (density * area)
         Vabs = (Vmerid**2 + Vt**2)**0.5
-        Ts = T0 - Vabs**2 / (2 * Cp)
+        Ts = T0 + Vabs**2/(2*Cp)
         Ps = P0 * ((Ts / T0)**((g / (g - 1))))
         rho2p = Ps / (Rgas * Ts)
         error = (1 - rho2p / density) * 100
         density = rho2p
     return density, Vmerid, Vabs, Ts, Ps
 
-def ThermoPropStator(rho0, area, alpha_out, T0, P0, g):
+
+def ThermoPropStator(rho0, mach, area, alpha_out, T0, P0, g):
     density = rho0
     error = 5
     while abs(error) > 1e-6:
         Vmerid = mdot / (density * area)
         Vtang = np.tan(np.deg2rad(alpha_out)) * Vmerid
         Vabs = (Vmerid**2 + Vtang**2)**0.5
-        Ts = T0 - Vabs**2 / (2 * Cp)
+        Ts = T0 + Vabs**2/(2*Cp)
         Ps = P0 * ((Ts / T0)**((g / (g - 1))))
         rho2p = Ps / (Rgas * Ts)
         error = (1 - rho2p / density) * 100
@@ -33,84 +37,103 @@ def ThermoPropStator(rho0, area, alpha_out, T0, P0, g):
 
     return density, Vmerid, Vabs, Ts, Ps, Vtang
 
-def Diffuser(P0, T0, g, area):
-    M = fsolve(mach, [0.1])
 
-def mach(p):
-    m = p
+# def Diffuser(P0, T0, g, area):
+    # M = fsolve(mach, [0.1])
 
 
-def Properties_add(g, T1, Vm1, Wt1, V1, W1, P1, rho1, Vt1, phi_angle1,Vz1):
-    a1      = (g * Rgas * T1)**0.5
-    Wm1     = Vm1
-    W1      = (Wt1**2 + Wm1**2)**0.5
-    M1      = V1 / a1
-    Mrel1   = W1 / a1
-    T0rel1  = T1 + (W1**2 / (2 * Cp))
-    P0rel1  = P1 + (0.5 * rho1 * W1**2)
-    betam1  = np.degrees(np.arctan(Wt1 / Vm1))
+def Mach(area, T01, P01, g):
+    num1 = area * P01 * (g / (Rgas * T01))**0.5
+
+    def eq(M1): return mdot - num1 * M1 * (1 + 0.5 *
+                                           (g - 1) * M1)**(-(0.5 * (g + 1)) / (g - 1))
+    mach_num = fsolve(eq, [0.0, 10])
+    return mach_num
+
+
+def Properties_add(g, T1, Vm1, Wt1, V1, P1, rho1, Vt1, phi_angle1, Vz1):
+    a1 = (g * Rgas * T1)**0.5
+    Wm1 = Vm1
+    M1 = V1 / a1
+    betam1 = np.degrees(np.arctan(Wt1 / Vm1))
     alpham1 = np.degrees(np.arctan(Vt1 / Vm1))
-    Vz1     = Vm1*np.cos(np.radians(phi_angle1))
-    Vr1     = Vm1*np.sin(np.radians(phi_angle1))
-    betaz1  = np.degrees(np.arctan(Wt1 / Vz1))
+    Vz1 = Vm1 * np.cos(np.radians(phi_angle1))
+    Vr1 = Vm1 * np.sin(np.radians(phi_angle1))
+    betaz1 = np.degrees(np.arctan(Wt1 / Vz1))
     alphaz1 = np.degrees(np.arctan(Vt1 / Vz1))
-    return a1, Wm1, W1, M1, Mrel1, T0rel1 ,P0rel1 ,betam1 ,alpham1,Vz1,Vr1, betaz1, alphaz1
+    betar1 = np.degrees(np.arctan(Wt1 / Vr1))
+    alphar1 = np.degrees(np.arctan(Vt1 / Vr1))
+    W1 = Wm1/np.cos(np.radians(betam1))
+    Mrel1 = W1 / a1
+    T0rel1 = T1 + (W1**2 / (2 * Cp))
+    P0rel1 = P1 + (0.5 * rho1 * W1**2)
+    return a1, Wm1, W1, M1, Mrel1, T0rel1, P0rel1, betam1, alpham1, Vz1, Vr1, betaz1, alphaz1
+
 
 def free_vortex(k, rm1, Vt1, r_span1, Vm1, T1, g, Ur1):
-    Vm_s1[:,k] = Vm1[k]
-    T_s1[:,k] = T1[k]
+    Vm_s1[:, k] = Vm1[k]
+    T_s1[:, k] = T1[k]
     for j in range(nsect):
         Vt_s1[j, k] = rm1[k] * Vt1[k] / r_span1[j, k]
-    sw_s1[:,k]      = r_span1[:,k]*Vt_s1[:,k]
-    Wt_s1[:,k]      = Vt_s1[:,k] - Ur1[:,k]
-    betam_s1[:,k]   = np.degrees(np.arctan(Wt_s1[:,k] / Vm_s1[:,k]))
-    alpham_s1[:,k]  = np.degrees(np.arctan(Vt_s1[:,k] / Vm_s1[:,k]))
-    V_s1[:,k]       = (Vt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
-    W_s1[:,k]       = (Wt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
-    a_s1[:,k]       = (g * T_s1[:,k] * Rgas)**0.5
-    M_s1[:,k]       = V_s1[:,k] / a_s1[:,k]
-    Mrel_s1[:,k]    = W_s1[:,k] / a_s1[:,k]
+    sw_s1[:, k] = r_span1[:, k] * Vt_s1[:, k]
+    Wt_s1[:, k] = Vt_s1[:, k] - Ur1[:, k]
+    betam_s1[:, k] = np.degrees(np.arctan(Wt_s1[:, k] / Vm_s1[:, k]))
+    alpham_s1[:, k] = np.degrees(np.arctan(Vt_s1[:, k] / Vm_s1[:, k]))
+    V_s1[:, k] = (Vt_s1[:, k]**2 + Vm_s1[:, k]**2)**0.5
+    W_s1[:, k] = (Wt_s1[:, k]**2 + Vm_s1[:, k]**2)**0.5
+    a_s1[:, k] = (g * T_s1[:, k] * Rgas)**0.5
+    M_s1[:, k] = V_s1[:, k] / a_s1[:, k]
+    Mrel_s1[:, k] = W_s1[:, k] / a_s1[:, k]
 
-    return V_s1[:,k], W_s1[:,k], betam_s1[:,k], alpham_s1[:,k], M_s1[:,k], Mrel_s1[:,k], Wt_s1[:,k], Vt_s1[:,k]
+    return V_s1[:, k], W_s1[:, k], betam_s1[:, k], alpham_s1[:, k], M_s1[:, k], Mrel_s1[:, k], Wt_s1[:, k], Vt_s1[:, k]
+
 
 def span_var(k, rm1, Vt1, r_span1, Vm1, T1, g, Ur1):
-    #exponential law
-    Vm_s1[:,k] = Vm1[k]
-    T_s1[:,k] = T1[k]
-    a=100
-    b=40
-    if k%2==0:
-        for j in rage(nsect):
-            Vt_s1[j,k] = a-(b*r_span1[j,k]/rm1[k])
+    # exponential law
+    Vm_s1[:, k] = Vm1[k]
+    T_s1[:, k] = T1[k]
+    a = 100
+    b = 40
+    if k % 2 == 0:
+        for j in range(nsect):
+            Vt_s1[j, k] = a - (b * r_span1[j, k] / rm1[k])
     else:
-        for j in rage(nsect):
-            Vt_s1[j,k] = a+(b*r_span1[j,k]/rm1[k])
+        for j in range(nsect):
+            Vt_s1[j, k] = a + (b * r_span1[j, k] / rm1[k])
 
-    sw_s1[:,k]      = r_span1[:,k]*Vt_s1[:,k]
-    Wt_s1[:,k]      = Vt_s1[:,k] - Ur1[:,k]
-    betam_s1[:,k]   = np.degrees(np.arctan(Wt_s1[:,k] / Vm_s1[:,k]))
-    alpham_s1[:,k]  = np.degrees(np.arctan(Vt_s1[:,k] / Vm_s1[:,k]))
-    V_s1[:,k]       = (Vt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
-    W_s1[:,k]       = (Wt_s1[:,k]**2 + Vm_s1[:,k]**2)**0.5
-    a_s1[:,k]       = (g * T_s1[:,k] * Rgas)**0.5
-    M_s1[:,k]       = V_s1[:,k] / a_s1[:,k]
-    Mrel_s1[:,k]    = W_s1[:,k] / a_s1[:,k]
+    sw_s1[:, k] = r_span1[:, k] * Vt_s1[:, k]
+    Wt_s1[:, k] = Vt_s1[:, k] - Ur1[:, k]
+    betam_s1[:, k] = np.degrees(np.arctan(Wt_s1[:, k] / Vm_s1[:, k]))
+    alpham_s1[:, k] = np.degrees(np.arctan(Vt_s1[:, k] / Vm_s1[:, k]))
+    V_s1[:, k] = (Vt_s1[:, k]**2 + Vm_s1[:, k]**2)**0.5
+    W_s1[:, k] = (Wt_s1[:, k]**2 + Vm_s1[:, k]**2)**0.5
+    a_s1[:, k] = (g * T_s1[:, k] * Rgas)**0.5
+    M_s1[:, k] = V_s1[:, k] / a_s1[:, k]
+    Mrel_s1[:, k] = W_s1[:, k] / a_s1[:, k]
+
 
 def DegofReac(P2, P1, P0):
     Rx = (P1 - P0) / (P2 - P0)
     return Rx
 
+
 def Recalc(L, rho, V):
-    Re = rho*V*L/nu
+    Re = rho * V * L / nu
     return Re
+
 
 def dehaller(W1, W0):
     DH = W1 / W0
     return DH
 
-def FlowCoeff(Vm1, U0):
-    phi = Vm1 / U0
+
+def FlowCoeff(Vm1, U0, b, r1, r2, axial):
+    if axial:
+        phi = Vm1 / U0
+    else:
+        phi = (Vm1 / U0) * (2 * r1 * b/r2**2)
     return phi
+
 
 def chord_lookup(flog, row_name, stagenum, keyword):
     ch = np.zeros(nsect)
@@ -124,13 +147,14 @@ def chord_lookup(flog, row_name, stagenum, keyword):
     flog.close()
     return ch / 1000
 
+
 def stagger_def(rn, mn, beta0):
     flog = open("splinedata_section." + str(mn) + ".R" + str(rn) + ".dat", 'r')
     nskip = 4
     npt = 3
     for i in range(nskip):
         datastr = flog.readline()
-    line = np.zeros((npt,1))
+    line = np.zeros((npt, 1))
     for i in range(npt):
         datastr = flog.readline()
         datam = datastr.split()
@@ -140,15 +164,17 @@ def stagger_def(rn, mn, beta0):
     flog.close()
     return stagger_ang
 
+
 def thk_lookup(rn, mn):
     flog = open("blade_Section_data.R" + str(rn) + ".dat", 'r')
-    nskip = 4+ mean_num
+    nskip = 4 + mean_num
     for i in range(nskip):
         datastr = flog.readline()
     datastr = flog.readline()
     datam = datastr.split()
     thk = np.float(datam[11])
     return thk
+
 
 def angle_def(rn, betaz_s, betar_s, betam_s):
     if ang[rn] == 0:
@@ -162,6 +188,7 @@ def angle_def(rn, betaz_s, betar_s, betam_s):
         beta_out_blade = betar_s
     return beta_in_blade, beta_out_blade
 
+
 def inc_angle(k):
     IncAngR1LE = np.zeros(nsect)
     if k == 0:
@@ -173,6 +200,7 @@ def inc_angle(k):
 
     return IncAngR1LE
 
+
 def DiffusionFact(Cp, sw, DH, Wt1, Wt0, W0, sol, W1, rmean, W_tip0, U1, T01, T00, rtip, axial):
     if axial:
         Df = 1 - DH + np.fabs(Wt1 - Wt0) / (2 * sol * W0)
@@ -181,7 +209,7 @@ def DiffusionFact(Cp, sw, DH, Wt1, Wt0, W0, sol, W1, rmean, W_tip0, U1, T01, T00
         num = 0.75 * Cp * (T01 - T00) / U1**2
         rad_ratio = rtip / rmean
         Df = 1 - Wratio + (Wratio * num) / \
-            ((Z[0]/np.pi) * (1 - rad_ratio) + 2 * rad_ratio)
+            ((Z[0] / np.pi) * (1 - rad_ratio) + 2 * rad_ratio)
         print(Wratio)
     return Df
 
@@ -202,26 +230,28 @@ print()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
 # Flow angle switch
+
+
 def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_in, beta_out, Mrel_s, x_s, r_s, span, xsl, rsl):
-    x_cp_le = np.linspace(x_s[cntr,0], x_s[cntr,1], nsect)
-    r_cp_le = np.linspace(r_s[cntr,0], r_s[cntr,1], nsect)
-    x_cp_te = np.linspace(x_s[cntr+1,0], x_s[cntr+1,1], nsect)
-    r_cp_te = np.linspace(r_s[cntr+1,0], r_s[cntr+1,1], nsect)
+    x_cp_le = np.linspace(x_s[cntr, 0], x_s[cntr, 1], nsect)
+    r_cp_le = np.linspace(r_s[cntr, 0], r_s[cntr, 1], nsect)
+    x_cp_te = np.linspace(x_s[cntr + 1, 0], x_s[cntr + 1, 1], nsect)
+    r_cp_te = np.linspace(r_s[cntr + 1, 0], r_s[cntr + 1, 1], nsect)
     f = open(str(casename) + "." + str(k + 1) + ".dat", "w")
     f.write("Input parameters (version 1.1)" + '\n')
     f.write("    " + row_name + str(stagenum) + '\n')
     f.write(" Blade row #:" + '\n')
     f.write("    " + str(k + 1) + '\n')
     f.write(" Number of blades in this row:" + '\n')
-    f.write("    " + str("%d" %Z[k]) + '\n')
+    f.write("    " + str("%d" % Z[k]) + '\n')
     f.write(" Blade Scaling factor (mm):" + '\n')
     f.write("    " + str(bsf * 1000) + '\n')
     f.write(" Number of streamlines:" + '\n')
     f.write("    " + str(nsect) + '\n')
     f.write(" Angles in the input file (0=Beta_z (default),1=Beta_r):" + '\n')
-    f.write("    " + str("%1d" %ang[k]) + " inci_dev_spline" + '\n')
+    f.write("    " + str("%1d" % ang[k]) + " inci_dev_spline" + '\n')
     f.write(" Airfoil camber defined by curvature control (0=no,1=yes):" + '\n')
-    f.write("    " + str(1) + '\t'+ 'spanwise_spline' +  '\n')
+    f.write("    " + str(1) + '\t' + 'spanwise_spline' + '\n')
     f.write(" Airfoil Thickness distribution (0=Wennerstrom,1=Spline):" + '\n')
     f.write("    " + str(0) + '\n')
     f.write(" Airfoil Thickness multiplier (0=no,1=yes):" + '\n')
@@ -342,7 +372,7 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_in, beta_
         f.write('0 0' + '\n')
     f.close()
 
-    #Executing T-blade3 and generate .geomturbo file
+    # Executing T-blade3 and generate .geomturbo file
     fout = open('output_' + row_name + str(stagenum) + '.txt', 'w')
     subprocess.Popen(["tblade3", f.name], stdout=fout,
                      stderr=fout).communicate()[0]
@@ -350,9 +380,10 @@ def create_tblade3(k, cntr, row_name, stagenum, data, nsect, bsf, beta_in, beta_
     fout.close()
     return f
 
+
 def make_sure_path_exists(path):
-	try:
-		os.makedirs(path)
-	except OSError as exception:
-		if exception.errno != errno.EEXIST:
-			raise
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise

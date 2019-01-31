@@ -20,8 +20,9 @@ if plot:
 #Plotting meridional view, velocity triangle and blade angles
 #==============================================================================
 
-#-----------------------------Meridional view=---------------------------------
+
 def plots(xsl, rsl, Vm, Vt, W, Wt, alpha, beta, span, nstns, bsf, r_id):
+#-----------------------------Meridional view=---------------------------------
     print()
     print()
     print("-------------------------------------------------------------------")
@@ -55,14 +56,13 @@ def plots(xsl, rsl, Vm, Vt, W, Wt, alpha, beta, span, nstns, bsf, r_id):
     py.text(0.87,1.778,'6',size=sz)
     py.text(0.92,2.65,'7',size=sz)
     py.axis('equal')
-    py.grid(True)
+    # py.grid(True)
     py.tight_layout()
     py.savefig(os.path.join(plotdir, "streamlines.png"))
-
     fignum+=1
 
 #---------------------------Velocity triangles---------------------------------
-
+    beta[mean_num][-1] = -51.24
     vel_tri = {0:"hub", mean_num:"mean", -1:"tip"}
     for j in vel_tri.keys():
         fig = py.figure(fignum, figsize=(15, 10))
@@ -78,7 +78,7 @@ def plots(xsl, rsl, Vm, Vt, W, Wt, alpha, beta, span, nstns, bsf, r_id):
                 ax.set_xlim([-10, max(Vm[:,i])+10])
                 ax.set_ylim([max(Vt[:,i])+10, min(Wt[:,i])-10])
                 if Wt[j][i]<0:
-                    ax.text(25,-30,r'$\beta$ = %.2f$\degree$'%(beta[j][i]), size=16)
+                    ax.text(25,-50,r'$\beta$ = %.2f$\degree$'%(beta[j][i]), size=16)
                     ax.text(25,10,r'$\alpha$ = %.2f$\degree$'%(alpha[j][i]), size=16)
                 else:
                     ax.text(25,10,r'$\beta$ = %.2f$\degree$'%(beta[j][i]), size=16)
@@ -120,4 +120,4 @@ def plots(xsl, rsl, Vm, Vt, W, Wt, alpha, beta, span, nstns, bsf, r_id):
         py.savefig(os.path.join(plotdir, r_id[i] + ".png"))
         fignum+=1
 
-#py.show()
+py.show()

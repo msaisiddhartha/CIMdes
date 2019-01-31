@@ -1,0 +1,15 @@
+Casename:   multistage
+Blades:		3
+N:			22363
+PT_in:		101325
+TT_in:		300
+mdot:		4
+Z:			24	24	24
+delTT:      176.46
+R1_WR:  	0.3356
+dalpha:		25.0000
+cl:			0.0005	0.0004	0.0003
+Y:			0.03
+angles:		0	0	2
+gap:		0.03	0.0073	0.0025	0.00125	0.04	0.02	0.005	0.003
+Bckswp:     -45
